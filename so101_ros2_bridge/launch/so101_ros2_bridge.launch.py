@@ -23,6 +23,7 @@ from launch import LaunchDescription
 from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
+    PythonExpression,
     TextSubstitution,
 )
 from launch_ros.actions import Node
@@ -48,15 +49,8 @@ def generate_launch_description():
     # Define the node, dynamically setting the executable, name, and parameters
     so101_bridge_node = Node(
         package='so101_ros2_bridge',
-        executable=[
-            robot_type,
-            TextSubstitution(text='_ros2_node'),
-        ],
-        name=[
-            TextSubstitution(text='so101_'),
-            robot_type,
-            TextSubstitution(text='_interface'),
-        ],
+        executable=PythonExpression(["'", robot_type, "_ros2_node'"]),
+        name=PythonExpression(["'so101_", robot_type, "_interface'"]),
         output='screen',
         parameters=[
             config_path,

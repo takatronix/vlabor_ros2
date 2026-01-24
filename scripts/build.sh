@@ -44,6 +44,7 @@ PACKAGES=(
     "so101_hardware_interface"
     "so101_ros2_bridge"
     "so101_bringup"
+    "ros_tcp_endpoint"
     "unity_robot_control"
 )
 

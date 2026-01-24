@@ -10,6 +10,8 @@ WebSocketサーバー + ROS2トピック購読でリアルタイムモニタリ�
 - ポジション保存/読込/削除
 - キャリブレーション表示
 """
+from __future__ import annotations
+
 import asyncio
 import json
 import threading
