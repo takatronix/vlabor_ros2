@@ -11,24 +11,24 @@ print_usage() {
     echo "Usage: vlabor <profile> [key:=value ...]"
     echo ""
     echo "Profiles:"
-    echo "  vr_teleop_so101"
-    echo "  single_teleop_so101"
-    echo "  dual_teleop_so101"
+    echo "  so101_vr_dual_teleop"
+    echo "  so101_single_teleop"
+    echo "  so101_dual_teleop"
     echo "  vr_server_only"
     echo "  rviz_so101"
     echo "  gazebo_so101"
     echo "  overhead_camera"
     echo ""
     echo "Examples:"
-    echo "  vlabor vr_teleop_so101"
+    echo "  vlabor so101_vr_dual_teleop"
     echo "  vlabor rviz_so101 rviz_config:=/path/to/file.rviz"
 }
 
 select_profile() {
     local profiles=(
-        "single_teleop_so101:VR片腕テレオペ(左)"
-        "dual_teleop_so101:ロボット側のみ(両腕)"
-        "vr_teleop_so101:VR双腕テレオペ(標準)"
+        "so101_single_teleop:VR片腕テレオペ(左)"
+        "so101_dual_teleop:ロボット側のみ(両腕)"
+        "so101_vr_dual_teleop:VR双腕テレオペ(標準)"
     )
 
     local index=0

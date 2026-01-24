@@ -70,13 +70,13 @@ piper_ctrl_single_node (left/right, 参考)
 ## 起動（VRテレオペ直結）
 短い起動コマンド:
 ```bash
-./scripts/vlabor vr_teleop_so101
+./scripts/vlabor so101_vr_dual_teleop
 ```
 
 詳細指定する場合:
 ```bash
 ros2 launch vlabor_launch vlabor.launch.py \
-  profile:=vr_teleop_so101 \
+  profile:=so101_vr_dual_teleop \
   left_serial_port:=/dev/ttyACM0 right_serial_port:=/dev/ttyACM1 \
   driver_backend:=mock
 ```
@@ -84,7 +84,7 @@ ros2 launch vlabor_launch vlabor.launch.py \
 実機の場合:
 ```bash
 ros2 launch vlabor_launch vlabor.launch.py \
-  profile:=vr_teleop_so101 \
+  profile:=so101_vr_dual_teleop \
   left_serial_port:=/dev/ttyACM0 right_serial_port:=/dev/ttyACM1 \
   driver_backend:=feetech
 ```
@@ -92,7 +92,7 @@ ros2 launch vlabor_launch vlabor.launch.py \
 キャリブJSONを指定する場合:
 ```bash
 ros2 launch vlabor_launch vlabor.launch.py \
-  profile:=vr_teleop_so101 \
+  profile:=so101_vr_dual_teleop \
   left_calibration_path:=/home/takatronix/.cache/huggingface/lerobot/calibration/robots/so101_follower/5AB9069153.json \
   right_calibration_path:=/home/takatronix/.cache/huggingface/lerobot/calibration/robots/so101_follower/5AB9069153.json \
   driver_backend:=feetech

@@ -58,7 +58,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'profile',
-            default_value='vr_teleop_so101',
+            default_value='so101_vr_dual_teleop',
             description='Profile name from vlabor_profiles.yaml',
         ),
         DeclareLaunchArgument('ros_ip', default_value='0.0.0.0'),

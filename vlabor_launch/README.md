@@ -4,12 +4,12 @@ vlabor 用の起動プロファイルをまとめた launch パッケージ。
 
 ## 使い方
 ```bash
-ros2 launch vlabor_launch vlabor.launch.py profile:=vr_teleop_so101
+ros2 launch vlabor_launch vlabor.launch.py profile:=so101_vr_dual_teleop
 ```
 
 簡易コマンド:
 ```bash
-./scripts/vlabor vr_teleop_so101
+./scripts/vlabor so101_vr_dual_teleop
 ```
 
 ## プロファイル

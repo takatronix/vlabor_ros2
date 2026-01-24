@@ -1,7 +1,7 @@
 profiles:
   # プロファイル = 起動構成のセット (launchを束ねる)
   # VR双腕テレオペ(標準) + 俯瞰カメラ(C920)
-  vr_teleop_so101:
+  so101_vr_dual_teleop:
     description: "VR dual-arm teleop + overhead camera (C920)"
     actions:
       - type: include
@@ -10,6 +10,11 @@ profiles:
         args:
           node_name: overhead_camera
           config_file: ${overhead_camera_config}
+      - type: include
+        package: lerobot_recorder
+        launch: episode_recorder.launch.py
+        args:
+          preset: so101_dual_vr
       - type: include
         package: unity_robot_control
         launch: vr_dual_arm_teleop_direct.launch.py
@@ -47,7 +52,7 @@ profiles:
         enabled: ${enable_foxglove}
 
   # VR片腕テレオペ(左) + 俯瞰カメラ(C920)
-  single_teleop_so101:
+  so101_single_teleop:
     description: "VR single-arm teleop (left) + overhead camera"
     actions:
       - type: include
@@ -56,6 +61,11 @@ profiles:
         args:
           node_name: overhead_camera
           config_file: ${overhead_camera_config}
+      - type: include
+        package: lerobot_recorder
+        launch: episode_recorder.launch.py
+        args:
+          preset: so101_single_vr
       - type: include
         package: unity_robot_control
         launch: vr_single_arm_teleop_direct.launch.py
@@ -83,7 +93,7 @@ profiles:
         enabled: ${enable_foxglove}
 
   # ロボット側のみ(両腕) + 俯瞰カメラ(C920)
-  dual_teleop_so101:
+  so101_dual_teleop:
     description: "Dual-arm teleop (robot side) + overhead camera"
     actions:
       - type: include
@@ -92,6 +102,11 @@ profiles:
         args:
           node_name: overhead_camera
           config_file: ${overhead_camera_config}
+      - type: include
+        package: lerobot_recorder
+        launch: episode_recorder.launch.py
+        args:
+          preset: so101_dual_leader
       - type: include
         package: unity_robot_control
         launch: vr_dual_arm_teleop_robot_only.launch.py

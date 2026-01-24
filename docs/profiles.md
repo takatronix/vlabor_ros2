@@ -5,9 +5,15 @@
 1つのprofileに、複数のlaunch/nodeを束ねて定義する。
 
 例:
-- VR双腕テレオペ
-- 俯瞰カメラのみ
-- RVizのみ
+- so101_vr_dual_teleop
+- so101_single_teleop
+- so101_dual_teleop
+
+## Recorderの組み込み
+以下のprofileは `lerobot_recorder` を同時起動する:
+- so101_vr_dual_teleop (preset: so101_dual_vr)
+- so101_single_teleop (preset: so101_single_vr)
+- so101_dual_teleop (preset: so101_dual_leader)
 
 設定ファイル:
 - `vlabor_launch/config/vlabor_profiles.yaml`
@@ -33,6 +39,7 @@
 ## 俯瞰カメラ(C920)のトピック
 - node_name: `overhead_camera`
 - image topic: `/overhead_camera/image_raw`
+- compressed: `/overhead_camera/image_raw/compressed`
 
 ## LeRobot Recorderの設定
 LeRobot録画は `lerobot_recorder` のpreset/configを使う。
