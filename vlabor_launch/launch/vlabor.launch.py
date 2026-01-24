@@ -16,6 +16,8 @@ def generate_launch_description():
     default_rviz = os.path.join(so101_share, 'rviz', 'display.rviz')
     default_rviz_vr = os.path.join(so101_share, 'rviz', 'vr_teleop.rviz')
     default_overhead_cfg = os.path.join(vlabor_share, 'config', 'overhead_camera_c920.yaml')
+    default_mirror_single = os.path.join(vlabor_share, 'config', 'copy_map_single.yaml')
+    default_mirror_dual = os.path.join(vlabor_share, 'config', 'copy_map_dual.yaml')
 
     include_profiles = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -47,6 +49,8 @@ def generate_launch_description():
             'rviz_vr_config': LaunchConfiguration('rviz_vr_config'),
             'gazebo_args': LaunchConfiguration('gazebo_args'),
             'overhead_camera_config': LaunchConfiguration('overhead_camera_config'),
+            'mirror_single_config': LaunchConfiguration('mirror_single_config'),
+            'mirror_dual_config': LaunchConfiguration('mirror_dual_config'),
         }.items(),
     )
 
@@ -84,5 +88,7 @@ def generate_launch_description():
         DeclareLaunchArgument('rviz_vr_config', default_value=default_rviz_vr),
         DeclareLaunchArgument('gazebo_args', default_value=''),
         DeclareLaunchArgument('overhead_camera_config', default_value=default_overhead_cfg),
+        DeclareLaunchArgument('mirror_single_config', default_value=default_mirror_single),
+        DeclareLaunchArgument('mirror_dual_config', default_value=default_mirror_dual),
         include_profiles,
     ])

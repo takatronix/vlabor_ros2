@@ -22,5 +22,9 @@ ros2 launch vlabor_launch vlabor.launch.py profile:=so101_vr_dual_teleop
 - 役割ルール: `docs/roles.md`
 - 役割設定ファイル: `config/roles.yaml`
 
+## Leader/Followerコピー設定
+- 単腕用: `config/copy_map_single.yaml`
+- 双腕用: `config/copy_map_dual.yaml`
+
 ## Profiles/Role 概要
 - `docs/profiles.md`

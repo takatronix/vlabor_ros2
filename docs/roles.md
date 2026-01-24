@@ -14,6 +14,7 @@
 - 物理マスターアームが起点 (source=physical)
   - 物理マスター側が leader
   - もう片側が follower
+  - dual構成では `left_arm_2` / `right_arm_2` を leader として扱う
 
 ## 推奨パラメータ
 ```yaml

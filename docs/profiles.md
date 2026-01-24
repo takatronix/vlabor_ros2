@@ -36,6 +36,24 @@
 - `docs/roles.md`
 - `vlabor_launch/config/roles.yaml`
 
+## Leader/Followerのコピー (joint_state_mirror_node)
+leader側の `joint_states_single` を follower側の `joint_ctrl_single` に転送する。
+
+デフォルトのコピー先:
+- single: `/right_arm/joint_states_single` -> `/left_arm/joint_ctrl_single`
+- dual: `/left_arm_2/joint_states_single` -> `/left_arm/joint_ctrl_single`
+       `/right_arm_2/joint_states_single` -> `/right_arm/joint_ctrl_single`
+
+設定ファイル:
+- `vlabor_launch/config/copy_map_single.yaml`
+- `vlabor_launch/config/copy_map_dual.yaml`
+
+上書きしたい場合は launch 引数で渡す:
+```bash
+ros2 launch vlabor_launch vlabor.launch.py profile:=so101_dual_teleop \\
+  mirror_dual_config:=/path/to/copy_map.yaml
+```
+
 ## 俯瞰カメラ(C920)のトピック
 - node_name: `overhead_camera`
 - image topic: `/overhead_camera/image_raw`

@@ -163,5 +163,7 @@ def generate_launch_description():
         DeclareLaunchArgument('rviz_config', default_value=''),
         DeclareLaunchArgument('rviz_vr_config', default_value=''),
         DeclareLaunchArgument('gazebo_args', default_value=''),
+        DeclareLaunchArgument('mirror_single_config', default_value=''),
+        DeclareLaunchArgument('mirror_dual_config', default_value=''),
         OpaqueFunction(function=_launch_setup),
     ])

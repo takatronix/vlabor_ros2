@@ -1,0 +1,6 @@
+# 双腕テレオペ用: leader(left_arm_2/right_arm_2) -> follower(left_arm/right_arm)
+copy_map:
+  - src: /left_arm_2/joint_states_single
+    dst: /left_arm/joint_ctrl_single
+  - src: /right_arm_2/joint_states_single
+    dst: /right_arm/joint_ctrl_single

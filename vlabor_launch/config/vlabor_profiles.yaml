@@ -51,9 +51,9 @@ profiles:
         launch: foxglove_bridge_launch.xml
         enabled: ${enable_foxglove}
 
-  # VR片腕テレオペ(左) + 俯瞰カメラ(C920)
+  # 単腕テレオペ(leader->follower) + 俯瞰カメラ(C920)
   so101_single_teleop:
-    description: "VR single-arm teleop (left) + overhead camera"
+    description: "Single-arm teleop (leader->follower) + overhead camera"
     actions:
       - type: include
         package: fv_camera
@@ -66,6 +66,12 @@ profiles:
         launch: episode_recorder.launch.py
         args:
           preset: so101_single_vr
+      - type: node
+        package: unity_robot_control
+        executable: joint_state_mirror_node
+        name: joint_state_mirror_single
+        parameters:
+          config_file: ${mirror_single_config}
       - type: include
         package: unity_robot_control
         launch: vr_single_arm_teleop_direct.launch.py
@@ -92,9 +98,9 @@ profiles:
         launch: foxglove_bridge_launch.xml
         enabled: ${enable_foxglove}
 
-  # ロボット側のみ(両腕) + 俯瞰カメラ(C920)
+  # 双腕テレオペ(leader->follower) + 俯瞰カメラ(C920)
   so101_dual_teleop:
-    description: "Dual-arm teleop (robot side) + overhead camera"
+    description: "Dual-arm teleop (leader->follower) + overhead camera"
     actions:
       - type: include
         package: fv_camera
@@ -107,6 +113,12 @@ profiles:
         launch: episode_recorder.launch.py
         args:
           preset: so101_dual_leader
+      - type: node
+        package: unity_robot_control
+        executable: joint_state_mirror_node
+        name: joint_state_mirror_dual
+        parameters:
+          config_file: ${mirror_dual_config}
       - type: include
         package: unity_robot_control
         launch: vr_dual_arm_teleop_robot_only.launch.py

@@ -53,6 +53,7 @@ ALL_PACKAGES=(
     "vlabor_launch"
     "fv_camera"
     "fluent_lib"
+    "lerobot_recorder"
 )
 
 PACKAGES=()

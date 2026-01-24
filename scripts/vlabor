@@ -26,8 +26,8 @@ print_usage() {
 
 select_profile() {
     local profiles=(
-        "so101_single_teleop:VR片腕テレオペ(左)"
-        "so101_dual_teleop:ロボット側のみ(両腕)"
+        "so101_single_teleop:単腕テレオペ(leader->follower)"
+        "so101_dual_teleop:双腕テレオペ(leader->follower)"
         "so101_vr_dual_teleop:VR双腕テレオペ(標準)"
     )
 

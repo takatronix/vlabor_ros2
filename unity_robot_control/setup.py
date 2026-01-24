@@ -31,6 +31,7 @@ setup(
             'ik_solver_node = unity_robot_control.ik_solver_node:main',
             'vr_dual_arm_control_node = unity_robot_control.vr_dual_arm_control_node:main',
             'ik_to_joint_trajectory_node = unity_robot_control.ik_to_joint_trajectory_node:main',
+            'joint_state_mirror_node = unity_robot_control.joint_state_mirror_node:main',
             # 左アーム/右アーム用IKソルバー
             'left_arm_ik_solver_node = unity_robot_control.ik_solver_node:main_left_arm',
             'right_arm_ik_solver_node = unity_robot_control.ik_solver_node:main_right_arm',
