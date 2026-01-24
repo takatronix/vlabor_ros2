@@ -1,0 +1,28 @@
+# SO101 Single Arm + VR Teleop Preset
+episode_recorder:
+  ros__parameters:
+    # Storage
+    output_dir: "~/lerobot_datasets"
+    default_dataset_name: "so101_single_vr"
+
+    # Recording
+    fps: 30
+    use_video: true
+
+    # Robot
+    robot_config: "robots/so101.yaml"
+
+    # Single arm
+    arm_count: 1
+    arm_0_namespace: "arm"
+    arm_0_action_source: "ik"
+
+    # Cameras
+    camera_count: 1
+    camera_0_name: "cam_front"
+    camera_0_topic: "/cam_front/image_raw"
+    camera_0_width: 640
+    camera_0_height: 480
+
+    # WebAPI
+    web_port: 8082

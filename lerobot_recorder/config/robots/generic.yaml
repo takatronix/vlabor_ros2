@@ -1,0 +1,22 @@
+# Generic Robot Template
+# Copy and modify for custom robots
+robot:
+  name: "custom_robot"
+  type: "custom"
+
+  # Joint configuration
+  joints:
+    count: 6
+    names:
+      - "joint1"
+      - "joint2"
+      - "joint3"
+      - "joint4"
+      - "joint5"
+      - "joint6"
+
+  # Topic templates ({ns} = namespace)
+  topics:
+    state: "/{ns}/joint_states"
+    action_ik: "/{ns}/ik/joint_angles"
+    action_leader: "/{ns}/leader/joint_states"

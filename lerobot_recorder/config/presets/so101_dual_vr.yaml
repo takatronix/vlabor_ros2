@@ -1,0 +1,30 @@
+# SO101 Dual Arm + VR Teleop Preset
+episode_recorder:
+  ros__parameters:
+    # Storage
+    output_dir: "~/lerobot_datasets"
+    default_dataset_name: "so101_dual_vr"
+
+    # Recording
+    fps: 30
+    use_video: true
+
+    # Robot
+    robot_config: "robots/so101.yaml"
+
+    # Arms (flat format for ROS2 parameters)
+    arm_count: 2
+    arm_0_namespace: "left_arm"
+    arm_0_action_source: "ik"
+    arm_1_namespace: "right_arm"
+    arm_1_action_source: "ik"
+
+    # Cameras (flat format for ROS2 parameters)
+    camera_count: 1
+    camera_0_name: "cam_front"
+    camera_0_topic: "/cam_front/image_raw"
+    camera_0_width: 640
+    camera_0_height: 480
+
+    # WebAPI
+    web_port: 8082

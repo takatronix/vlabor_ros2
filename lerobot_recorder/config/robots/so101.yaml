@@ -1,0 +1,21 @@
+# SO101 Robot Definition
+robot:
+  name: "so101"
+  type: "so101_follower"
+
+  # Joint configuration
+  joints:
+    count: 6
+    names:
+      - "shoulder_pan"
+      - "shoulder_lift"
+      - "elbow_flex"
+      - "wrist_flex"
+      - "wrist_roll"
+      - "gripper"
+
+  # Topic templates ({ns} = namespace)
+  topics:
+    state: "/{ns}/joint_states"
+    action_ik: "/{ns}/ik/joint_angles"
+    action_leader: "/{ns}/leader/joint_states"

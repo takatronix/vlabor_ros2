@@ -1,0 +1,22 @@
+# AgileX Piper Robot Definition
+robot:
+  name: "piper"
+  type: "agilex_piper"
+
+  # Joint configuration
+  joints:
+    count: 7
+    names:
+      - "joint1"
+      - "joint2"
+      - "joint3"
+      - "joint4"
+      - "joint5"
+      - "joint6"
+      - "gripper"
+
+  # Topic templates ({ns} = namespace)
+  topics:
+    state: "/{ns}/joint_states"
+    action_ik: "/{ns}/target_joint_states"
+    action_leader: "/{ns}/leader/joint_states"
