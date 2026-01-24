@@ -1,0 +1,41 @@
+{
+  // VLAbor - Robot側 Zenoh Bridge 設定
+  //
+  // 使い方:
+  //   zenoh-bridge-ros2dds -c zenoh-robot.json5
+  //
+  // ALLOWED_VR_IP 環境変数で操作許可IPを指定
+
+  // リッスン設定
+  listen: {
+    endpoints: ["tcp/0.0.0.0:7447"]
+  },
+
+  // ROS2 DDS設定
+  plugins: {
+    ros2dds: {
+      // 操作系トピック: 許可IPからのみ受信
+      // 映像系トピック: 全員に配信
+
+      // Subscriber allow list (Robot側が受信するトピック)
+      allow: {
+        subscribers: [
+          // 操作系 - VRからの入力
+          "/quest/**",
+          "/target_pose",
+          "/vr/**"
+        ],
+        publishers: [
+          // 映像・状態系 - 全員に配信
+          "/camera/**",
+          "/image_raw",
+          "/robot/**",
+          "/joint_states",
+          "/tf",
+          "/tf_static",
+          "/**"  // デフォルト全許可
+        ]
+      }
+    }
+  }
+}

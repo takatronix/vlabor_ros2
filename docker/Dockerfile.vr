@@ -1,0 +1,73 @@
+#
+# VLAbor - VR Side Docker Image
+#
+# VR側（リモート）で使用: Unity TCP Endpoint + Zenoh Bridge
+#
+# Build:
+#   docker build -f Dockerfile.vr -t vlabor-vr .
+#
+# Run:
+#   docker run -it --net=host \
+#     -e ROBOT_TAILSCALE_IP=100.64.0.1 \
+#     -e TS_AUTHKEY=tskey-client-xxx \
+#     vlabor-vr
+#
+
+FROM ros:humble-ros-base
+
+LABEL maintainer="takatronix"
+LABEL description="VLAbor - VR側 (Unity TCP + Zenoh Bridge)"
+
+# 環境変数
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ROS_DISTRO=humble
+ENV ZENOH_VERSION=1.5.0
+
+# 基本パッケージインストール
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    unzip \
+    git \
+    python3-pip \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# ROS TCP Endpoint をソースからビルド
+RUN mkdir -p /ros2_ws/src && cd /ros2_ws/src && \
+    git clone https://github.com/Unity-Technologies/ROS-TCP-Endpoint.git -b main-ros2 && \
+    cd /ros2_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    colcon build --packages-select ros_tcp_endpoint
+
+# Tailscale インストール
+RUN curl -fsSL https://tailscale.com/install.sh | sh
+
+# Zenoh Bridge インストール
+RUN cd /tmp && \
+    wget -q "https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds/releases/download/${ZENOH_VERSION}/zenoh-plugin-ros2dds-${ZENOH_VERSION}-x86_64-unknown-linux-gnu-standalone.zip" -O zenoh.zip && \
+    unzip zenoh.zip && \
+    mv zenoh-bridge-ros2dds /usr/local/bin/ && \
+    chmod +x /usr/local/bin/zenoh-bridge-ros2dds && \
+    rm -rf /tmp/*
+
+# ワークスペース作成
+WORKDIR /ros2_ws
+
+# ROS2ワークスペースのセットアップをentrypointに追加
+SHELL ["/bin/bash", "-c"]
+
+# エントリーポイントスクリプト
+COPY src/vr_ros2/docker/entrypoint-vr.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# 環境変数（デフォルト値）
+ENV ROBOT_TAILSCALE_IP=""
+ENV ZENOH_PORT=7447
+ENV ROS_TCP_PORT=42000
+ENV TS_AUTHKEY=""
+
+EXPOSE 42000
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD []

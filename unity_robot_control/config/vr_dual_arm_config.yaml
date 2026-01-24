@@ -1,0 +1,212 @@
+# VR Dual Arm Control Configuration
+# VR両手テレオペレーション設定
+#
+# VR（Quest 3）がリーダー（教示者）として機能し、両アームを独立制御する。
+# - VR左手 → 左アーム
+# - VR右手 → 右アーム
+#
+# アーム種類の切り替えは各トピック名を変更することで対応可能。
+# 例：SO101, PIPER, DAIHENなど
+
+vr_dual_arm_control_node:
+  ros__parameters:
+    # =========================================================================
+    # VR入力トピック（Quest 3からの手のポーズ）
+    # =========================================================================
+    left_hand_topic: "/quest/left_controller/pose"
+    right_hand_topic: "/quest/right_controller/pose"
+    joystick_topic: "/quest/joystick"
+    left_gesture_topic: "/quest/hand_gesture/left"
+    right_gesture_topic: "/quest/hand_gesture/right"
+
+    # =========================================================================
+    # アーム出力トピック
+    # ※ アーム種類を変更する場合はここを編集
+    # =========================================================================
+    # SO101 (デフォルト)
+    left_arm_target_topic: "/left_arm/target_pose"
+    right_arm_target_topic: "/right_arm/target_pose"
+    left_arm_enable_topic: "/left_arm/enable_flag"
+    right_arm_enable_topic: "/right_arm/enable_flag"
+    gripper_left_topic: "/left_arm/gripper_cmd"
+    gripper_right_topic: "/right_arm/gripper_cmd"
+
+    # PIPER例:
+    # left_arm_target_topic: "/piper_left/target_pose"
+    # right_arm_target_topic: "/piper_right/target_pose"
+    # left_arm_enable_topic: "/piper_left/enable_flag"
+    # right_arm_enable_topic: "/piper_right/enable_flag"
+    # gripper_left_topic: "/piper_left/gripper_cmd"
+    # gripper_right_topic: "/piper_right/gripper_cmd"
+
+    # DAIHEN例:
+    # left_arm_target_topic: "/daihen_1/target_pose"
+    # right_arm_target_topic: "/daihen_2/target_pose"
+
+    # =========================================================================
+    # レガシー（後方互換性）
+    # =========================================================================
+    enable_single_arm_mode: false
+    legacy_target_pose_topic: "/target_pose"
+
+    # =========================================================================
+    # 位置スケールとオフセット
+    # =========================================================================
+    # VRの動き(m)をロボットにマッピング (1.0 = 1:1)
+    position_scale: 1.0
+    # ロボットの作業領域中心へのオフセット (x=前方, y=左右, z=上)
+    # SO101の自然な作業位置は前方20cm、上15cm程度
+    left_arm_offset_xyz: [0.20, 0.0, 0.15]
+    right_arm_offset_xyz: [0.20, 0.0, 0.15]
+    enable_pose_offset: true
+
+    # =========================================================================
+    # 座標変換と安全制限
+    # =========================================================================
+    # VR(Unity左手系) -> ROS(右手系)座標変換
+    # VR: x=右, y=上, z=前
+    # ROS: x=前, y=左, z=上
+    # axis_map: [ROS_x元, ROS_y元, ROS_z元]
+    enable_axis_remap: true
+    axis_map: ["-y", "x", "z"]
+
+    # 安全制限：アームの到達範囲内に制限
+    # 広めに設定してIK側で到達可能性を判断させる
+    enable_position_clamp: false
+    position_min_xyz: [0.0, -0.25, 0.0]
+    position_max_xyz: [0.35, 0.25, 0.35]
+
+    # =========================================================================
+    # 相対モード
+    # =========================================================================
+    # true: VRの「動き」がアームの動きになる（推奨）
+    # false: VRの絶対座標がそのままアームに送られる
+    enable_relative_mode: true
+    # 自動原点リセット（初回ポーズ/再接続時に原点更新）
+    enable_auto_origin_reset: true
+    auto_reset_timeout_sec: 3.0
+
+    # =========================================================================
+    # グリッパー制御
+    # =========================================================================
+    enable_gripper_control: true
+    enable_gripper_with_trigger: true
+    gripper_left_axis: 4
+    gripper_right_axis: 5
+    gripper_deadband: 0.02
+
+    # =========================================================================
+    # ボタン制御
+    # =========================================================================
+    # グリップボタンで動作制御（握っている間だけアームが動く）
+    enable_grip_to_move: true
+    grip_left_button_index: 10   # 左グリップボタン
+    grip_right_button_index: 11  # 右グリップボタン
+
+    # 原点リセット（左右独立）
+    enable_reset_with_joystick: true
+    reset_left_button_index: 2   # Xボタン(左) → 左アーム原点リセット
+    reset_right_button_index: 0  # Aボタン(右) → 右アーム原点リセット
+
+    # ホームボタン（左右独立）
+    enable_home_button: true
+    home_left_button_index: 3    # Yボタン(左) → 左アームホーム
+    home_right_button_index: 1   # Bボタン(右) → 右アームホーム
+
+    # 緊急全リセット（両スティック長押し）
+    enable_emergency_reset: true
+    left_stick_button_index: 8   # 左スティック押し込み
+    right_stick_button_index: 9  # 右スティック押し込み
+    emergency_reset_hold_sec: 1.0  # 長押し時間（秒）
+
+    # =========================================================================
+    # ホーム復帰サービス
+    # =========================================================================
+    # 各アームのso101_control_nodeが提供するgo_homeサービス
+    left_arm_go_home_service: "/left_arm/go_home"
+    right_arm_go_home_service: "/right_arm/go_home"
+
+    # =========================================================================
+    # デバッグ
+    # =========================================================================
+    enable_debug_pose_logs: true
+
+# =============================================================================
+# 左アームIKソルバー設定
+# =============================================================================
+left_arm_ik_solver_node:
+  ros__parameters:
+    base_link: "base_link"
+    tf_base_link: "left_arm/base_link"
+    end_effector_link: "gripper_link"
+    urdf_file: ""  # auto-detect from so101_description
+    joint_names: ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]
+    target_pose_topic: "/left_arm/target_pose"
+    joint_angles_topic: "/left_arm/ik/joint_angles"
+    joint_states_topic: "/left_arm/joint_states"
+    use_orientation: false
+    max_reach: 0.0
+    ik_max_iterations: 30
+    ik_tolerance: 0.005
+    ik_damping: 0.05
+    # IK失敗時の挙動
+    use_approximate_on_fail: true      # 失敗時でも近似解を使う
+    approximate_error_threshold: 0.1   # この誤差(m)以下なら近似解を使う
+    # 関節角度変化量制限（滑らかさ）
+    enable_delta_limit: true
+    max_joint_delta_rad: 0.3           # 1回の更新での最大変化量(rad) ≈ 17度
+
+# =============================================================================
+# 右アームIKソルバー設定
+# =============================================================================
+right_arm_ik_solver_node:
+  ros__parameters:
+    base_link: "base_link"
+    tf_base_link: "right_arm/base_link"
+    end_effector_link: "gripper_link"
+    urdf_file: ""  # auto-detect from so101_description
+    joint_names: ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]
+    target_pose_topic: "/right_arm/target_pose"
+    joint_angles_topic: "/right_arm/ik/joint_angles"
+    joint_states_topic: "/right_arm/joint_states"
+    use_orientation: false
+    max_reach: 0.0
+    ik_max_iterations: 30
+    ik_tolerance: 0.005
+    ik_damping: 0.05
+    # IK失敗時の挙動
+    use_approximate_on_fail: true      # 失敗時でも近似解を使う
+    approximate_error_threshold: 0.1   # この誤差(m)以下なら近似解を使う
+    # 関節角度変化量制限（滑らかさ）
+    enable_delta_limit: true
+    max_joint_delta_rad: 0.3           # 1回の更新での最大変化量(rad) ≈ 17度
+
+# =============================================================================
+# IK -> JointTrajectory 変換
+# =============================================================================
+ik_to_joint_trajectory_node:
+  ros__parameters:
+    left_ik_topic: "/left_arm/ik/joint_angles"
+    right_ik_topic: "/right_arm/ik/joint_angles"
+    left_command_topic: "/left_arm/arm_controller/joint_trajectory"
+    right_command_topic: "/right_arm/arm_controller/joint_trajectory"
+    command_duration_sec: 0.05
+    use_joint_names_from_msg: false
+    joint_names: ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]
+
+# =============================================================================
+# 左アームコントロールノード設定（so101_control_node）
+# =============================================================================
+left_arm_so101_control_node:
+  ros__parameters:
+    # ホームポジション（各関節の角度 [rad]）
+    # 左右アームで異なるホームポジションを設定可能
+    home_position: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+# =============================================================================
+# 右アームコントロールノード設定（so101_control_node）
+# =============================================================================
+right_arm_so101_control_node:
+  ros__parameters:
+    # ホームポジション（各関節の角度 [rad]）
+    home_position: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

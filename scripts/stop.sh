@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# VR ROS2 システム停止スクリプト
+#
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 色付き出力
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+PID_FILE="/tmp/vr_ros2_pids.txt"
+LAUNCH_PID_FILE="/tmp/vr_teleop_launch.pid"
+TCP_PID_FILE="/tmp/ros_tcp_endpoint.pid"
+
+print_status() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  VR ROS2 システム停止${NC}"
+echo -e "${BLUE}========================================${NC}"
+echo ""
+
+# PIDファイルからプロセス停止
+if [ -f "$PID_FILE" ]; then
+    print_status "登録されたプロセスを停止中..."
+
+    while read line; do
+        pid=$(echo $line | cut -d: -f1)
+        name=$(echo $line | cut -d: -f2)
+
+        if kill -0 $pid 2>/dev/null; then
+            print_status "$name (PID: $pid) を停止中..."
+            kill $pid 2>/dev/null
+            sleep 0.5
+
+            # まだ生きていれば強制終了
+            if kill -0 $pid 2>/dev/null; then
+                print_warning "$name を強制終了..."
+                kill -9 $pid 2>/dev/null
+            fi
+            echo -e "  ${GREEN}●${NC} $name 停止完了"
+        else
+            echo -e "  ${YELLOW}○${NC} $name は既に停止しています"
+        fi
+    done < "$PID_FILE"
+
+    rm -f "$PID_FILE"
+else
+    print_warning "PIDファイルが見つかりません"
+fi
+
+# 追加PIDファイル
+for extra_pid_file in "$LAUNCH_PID_FILE" "$TCP_PID_FILE"; do
+    if [ -f "$extra_pid_file" ]; then
+        pid=$(cat "$extra_pid_file")
+        if kill -0 "$pid" 2>/dev/null; then
+            print_status "追加プロセス (PID: $pid) を停止中..."
+            kill "$pid" 2>/dev/null
+            sleep 0.5
+            if kill -0 "$pid" 2>/dev/null; then
+                print_warning "追加プロセスを強制終了..."
+                kill -9 "$pid" 2>/dev/null
+            fi
+        fi
+        rm -f "$extra_pid_file"
+    fi
+done
+
+# 残っているROS2ノードも確認して停止
+print_status "関連するROS2ノードを確認中..."
+
+NODES=(
+    "ros_tcp_endpoint"
+    "default_server_endpoint"
+    "vr_dual_arm_control_node"
+    "left_arm_ik_solver_node"
+    "right_arm_ik_solver_node"
+    "ik_to_joint_trajectory_node"
+    "ros2_control_node"
+    "robot_state_publisher"
+    "so101_control_node"
+    "so101_hardware_bridge_node"
+    "world_to_base_link_publisher"
+    "so101_webui_node"
+    "so101_webui_left"
+    "so101_webui_right"
+    "foxglove_bridge"
+    "quest"
+    "tf_RosPublisher"
+    "tf_RosSubscriber"
+    "target_pose_RosPublisher"
+)
+
+for node in "${NODES[@]}"; do
+    pids=$(pgrep -f "$node" 2>/dev/null)
+    if [ -n "$pids" ]; then
+        print_warning "残存プロセス発見: $node"
+        for pid in $pids; do
+            print_status "  PID $pid を停止..."
+            kill $pid 2>/dev/null
+        done
+    fi
+done
+
+echo ""
+print_status "=== 停止完了 ==="

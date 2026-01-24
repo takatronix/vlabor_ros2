@@ -1,0 +1,16 @@
+# Piper Robot Configuration
+# 7-DOF robot arm (example)
+
+robot_type: piper
+
+joint_names:
+  - joint_1
+  - joint_2
+  - joint_3
+  - joint_4
+  - joint_5
+  - joint_6
+  - joint_7
+
+# Optional: if gripper is separate
+# gripper_joint: gripper

@@ -1,0 +1,22 @@
+# SO101 Robot Configuration
+# 6-DOF robot arm
+
+robot_type: so101_follower
+
+joint_names:
+  - shoulder_pan
+  - shoulder_lift
+  - elbow_flex
+  - wrist_flex
+  - wrist_roll
+  - gripper
+
+# Optional: state joint names (if different from action)
+# state_joint_names:
+#   - shoulder_pan
+#   - ...
+
+# Optional: action joint names (if different from joint_names)
+# action_joint_names:
+#   - shoulder_pan
+#   - ...

@@ -1,0 +1,22 @@
+# Aloha Robot Configuration
+# Dual-arm 6-DOF + gripper (example)
+
+robot_type: aloha
+
+joint_names:
+  # Left arm
+  - left_waist
+  - left_shoulder
+  - left_elbow
+  - left_forearm_roll
+  - left_wrist_angle
+  - left_wrist_rotate
+  - left_gripper
+  # Right arm
+  - right_waist
+  - right_shoulder
+  - right_elbow
+  - right_forearm_roll
+  - right_wrist_angle
+  - right_wrist_rotate
+  - right_gripper

@@ -1,0 +1,125 @@
+#
+# VLAbor - Local (All-in-One) Docker Image
+#
+# ローカル環境用: VPN不要、同一ネットワーク内で動作
+# Robot制御 + Unity TCP Endpoint + Zenoh Bridge + FluentVision Camera を1つのコンテナで
+#
+# Build:
+#   cd ~/ros2_ws  # ワークスペースルートから
+#   docker build -f src/vr_ros2/docker/Dockerfile.local -t vlabor-local .
+#
+# Run:
+#   docker run -it --net=host --privileged \
+#     -v /dev:/dev \
+#     vlabor-local
+#
+
+FROM ros:humble-ros-base
+
+LABEL maintainer="takatronix"
+LABEL description="VLAbor - Local版 (All-in-One, VPN不要, カメラ対応)"
+
+# 環境変数
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ROS_DISTRO=humble
+ENV ZENOH_VERSION=1.5.0
+
+# 基本パッケージインストール
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    unzip \
+    git \
+    python3-pip \
+    python3-colcon-common-extensions \
+    ros-${ROS_DISTRO}-xacro \
+    ros-${ROS_DISTRO}-robot-state-publisher \
+    ros-${ROS_DISTRO}-joint-state-publisher \
+    ros-${ROS_DISTRO}-tf2-ros \
+    ros-${ROS_DISTRO}-tf2-tools \
+    ros-${ROS_DISTRO}-tf2-geometry-msgs \
+    ros-${ROS_DISTRO}-foxglove-bridge \
+    ros-${ROS_DISTRO}-rosidl-default-generators \
+    ros-${ROS_DISTRO}-rosidl-default-runtime \
+    ros-${ROS_DISTRO}-cv-bridge \
+    ros-${ROS_DISTRO}-image-transport \
+    ros-${ROS_DISTRO}-compressed-image-transport \
+    ros-${ROS_DISTRO}-usb-cam \
+    ros-${ROS_DISTRO}-pcl-ros \
+    ros-${ROS_DISTRO}-pcl-conversions \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python依存関係
+RUN pip3 install \
+    pyserial \
+    numpy \
+    ikpy \
+    opencv-python
+
+# ROS TCP Endpoint をソースからビルド
+RUN mkdir -p /ros2_ws/src && cd /ros2_ws/src && \
+    git clone https://github.com/Unity-Technologies/ROS-TCP-Endpoint.git -b main-ros2 && \
+    cd /ros2_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    colcon build --packages-select ros_tcp_endpoint
+
+# vr_haptic_msgs をローカルからコピーしてビルド
+COPY src/vr_haptic_msgs /ros2_ws/src/vr_haptic_msgs
+RUN cd /ros2_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    . /ros2_ws/install/setup.sh && \
+    colcon build --packages-select vr_haptic_msgs
+
+# Zenoh Bridge インストール (オプション: 将来のリモート拡張用)
+RUN cd /tmp && \
+    wget -q "https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds/releases/download/${ZENOH_VERSION}/zenoh-plugin-ros2dds-${ZENOH_VERSION}-x86_64-unknown-linux-gnu-standalone.zip" -O zenoh.zip && \
+    unzip zenoh.zip && \
+    mv zenoh-bridge-ros2dds /usr/local/bin/ && \
+    chmod +x /usr/local/bin/zenoh-bridge-ros2dds && \
+    rm -rf /tmp/*
+
+# ========================================
+# FluentVision ROS2 (カメラサポート)
+# ========================================
+COPY src/fluent_vision_ros2 /ros2_ws/src/fluent_vision_ros2
+
+# fluent_lib をビルド
+RUN cd /ros2_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    . /ros2_ws/install/setup.sh && \
+    colcon build --packages-select fluent_lib
+
+# fv_msgs をビルド
+RUN cd /ros2_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    . /ros2_ws/install/setup.sh && \
+    colcon build --packages-select fv_msgs || true
+
+# fv_camera をビルド (USBカメラ対応)
+RUN cd /ros2_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    . /ros2_ws/install/setup.sh && \
+    colcon build --packages-select fv_camera || true
+
+# ワークスペース作成
+WORKDIR /ros2_ws
+
+SHELL ["/bin/bash", "-c"]
+
+# エントリーポイントスクリプト
+COPY src/vr_ros2/docker/entrypoint-local.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# 環境変数（デフォルト値）
+ENV ROS_TCP_PORT=42000
+ENV LEFT_SERIAL_PORT=/dev/ttyACM0
+ENV RIGHT_SERIAL_PORT=/dev/ttyACM1
+ENV DRIVER_BACKEND=feetech
+ENV AUTO_ENABLE=false
+ENV CAMERA_DEVICE=/dev/video0
+ENV ENABLE_CAMERA=true
+
+EXPOSE 42000 8765
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD []

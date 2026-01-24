@@ -1,0 +1,46 @@
+{
+    "_comment": "ROS2用キャリブレーション（URDF原点基準）- 右アーム",
+    "_note": "homing_offset = 2048 - tick_at_urdf_home。実機でキャリブレーション後に更新してください。",
+    "shoulder_pan": {
+        "id": 1,
+        "drive_mode": 0,
+        "homing_offset": 0,
+        "range_min": 740,
+        "range_max": 3337
+    },
+    "shoulder_lift": {
+        "id": 2,
+        "drive_mode": 0,
+        "homing_offset": 0,
+        "range_min": 1264,
+        "range_max": 2394
+    },
+    "elbow_flex": {
+        "id": 3,
+        "drive_mode": 0,
+        "homing_offset": 0,
+        "range_min": 449,
+        "range_max": 2656
+    },
+    "wrist_flex": {
+        "id": 4,
+        "drive_mode": 0,
+        "homing_offset": 0,
+        "range_min": 879,
+        "range_max": 3242
+    },
+    "wrist_roll": {
+        "id": 5,
+        "drive_mode": 0,
+        "homing_offset": 0,
+        "range_min": 101,
+        "range_max": 3964
+    },
+    "gripper": {
+        "id": 6,
+        "drive_mode": 0,
+        "homing_offset": 0,
+        "range_min": 2021,
+        "range_max": 3580
+    }
+}

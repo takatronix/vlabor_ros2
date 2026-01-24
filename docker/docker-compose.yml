@@ -1,0 +1,153 @@
+#
+# VLAbor Docker Compose
+#
+# VR Teleoperation Framework for Remote Robot Control
+#
+# 使い方:
+#   # ローカル版（VPN不要、同一ネットワーク内）
+#   docker compose up local
+#
+#   # フル機能版（FluentVision + カメラ + RealSense）
+#   docker compose up fluent
+#
+#   # リモート版 - Robot側で起動
+#   docker compose up robot-fluent
+#
+#   # リモート版 - VR側で起動（別マシン）
+#   ROBOT_TAILSCALE_IP=100.64.0.1 docker compose up vr
+#
+
+version: '3.8'
+
+services:
+  # ============================================================
+  # ローカル版（VPN不要、カメラ対応）
+  # ============================================================
+  local:
+    build:
+      context: ../../..
+      dockerfile: src/vr_ros2/docker/Dockerfile.local
+    image: vlabor-local:latest
+    container_name: vlabor-local
+    network_mode: host
+    privileged: true
+    volumes:
+      - /dev:/dev
+      - ../:/ros2_ws/src/vr_ros2:ro
+    environment:
+      - ROS_TCP_PORT=${ROS_TCP_PORT:-42000}
+      - LEFT_SERIAL_PORT=${LEFT_SERIAL_PORT:-/dev/ttyACM0}
+      - RIGHT_SERIAL_PORT=${RIGHT_SERIAL_PORT:-/dev/ttyACM1}
+      - DRIVER_BACKEND=${DRIVER_BACKEND:-feetech}
+      - AUTO_ENABLE=${AUTO_ENABLE:-false}
+      - CAMERA_DEVICE=${CAMERA_DEVICE:-/dev/video0}
+      - ENABLE_CAMERA=${ENABLE_CAMERA:-true}
+    restart: unless-stopped
+
+  # ============================================================
+  # フル機能版（FluentVision + カメラ + RealSense）
+  # ============================================================
+  fluent:
+    build:
+      context: ../../..
+      dockerfile: src/vr_ros2/docker/Dockerfile.fluent
+    image: vlabor-fluent:latest
+    container_name: vlabor-fluent
+    network_mode: host
+    privileged: true
+    volumes:
+      - /dev:/dev
+      - ../:/ros2_ws/src/vr_ros2:ro
+    environment:
+      - ROS_TCP_PORT=${ROS_TCP_PORT:-42000}
+      - LEFT_SERIAL_PORT=${LEFT_SERIAL_PORT:-/dev/ttyACM0}
+      - RIGHT_SERIAL_PORT=${RIGHT_SERIAL_PORT:-/dev/ttyACM1}
+      - DRIVER_BACKEND=${DRIVER_BACKEND:-feetech}
+      - AUTO_ENABLE=${AUTO_ENABLE:-false}
+      - CAMERA_DEVICE=${CAMERA_DEVICE:-/dev/video0}
+      - ENABLE_CAMERA=${ENABLE_CAMERA:-true}
+    restart: unless-stopped
+
+  # ============================================================
+  # Robot側 + FluentVision（リモート用）
+  # ============================================================
+  robot-fluent:
+    build:
+      context: ../../..
+      dockerfile: src/vr_ros2/docker/Dockerfile.robot-fluent
+    image: vlabor-robot-fluent:latest
+    container_name: vlabor-robot-fluent
+    network_mode: host
+    privileged: true
+    volumes:
+      - /dev:/dev
+      - /var/lib/tailscale:/var/lib/tailscale
+      - ../:/ros2_ws/src/vr_ros2:ro
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - ZENOH_PORT=${ZENOH_PORT:-7447}
+      - LEFT_SERIAL_PORT=${LEFT_SERIAL_PORT:-/dev/ttyACM0}
+      - RIGHT_SERIAL_PORT=${RIGHT_SERIAL_PORT:-/dev/ttyACM1}
+      - DRIVER_BACKEND=${DRIVER_BACKEND:-feetech}
+      - AUTO_ENABLE=${AUTO_ENABLE:-false}
+      - ALLOWED_VR_IP=${ALLOWED_VR_IP:-}
+      - CAMERA_DEVICE=${CAMERA_DEVICE:-/dev/video0}
+      - ENABLE_CAMERA=${ENABLE_CAMERA:-true}
+    restart: unless-stopped
+
+  # ============================================================
+  # Robot側（軽量、リモート用）
+  # ============================================================
+  robot:
+    build:
+      context: ../../..
+      dockerfile: src/vr_ros2/docker/Dockerfile.robot
+    image: vlabor-robot:latest
+    container_name: vlabor-robot
+    network_mode: host
+    privileged: true
+    volumes:
+      - /dev:/dev
+      - /var/lib/tailscale:/var/lib/tailscale
+      - ../:/ros2_ws/src/vr_ros2:ro
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - ZENOH_PORT=${ZENOH_PORT:-7447}
+      - LEFT_SERIAL_PORT=${LEFT_SERIAL_PORT:-/dev/ttyACM0}
+      - RIGHT_SERIAL_PORT=${RIGHT_SERIAL_PORT:-/dev/ttyACM1}
+      - DRIVER_BACKEND=${DRIVER_BACKEND:-feetech}
+      - AUTO_ENABLE=${AUTO_ENABLE:-false}
+      - ALLOWED_VR_IP=${ALLOWED_VR_IP:-}
+    restart: unless-stopped
+
+  # ============================================================
+  # VR側（リモート用）- カメラ不要
+  # ============================================================
+  vr:
+    build:
+      context: ../../..
+      dockerfile: src/vr_ros2/docker/Dockerfile.vr
+    image: vlabor-vr:latest
+    container_name: vlabor-vr
+    network_mode: host
+    privileged: true
+    volumes:
+      - /var/lib/tailscale:/var/lib/tailscale
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - ROBOT_TAILSCALE_IP=${ROBOT_TAILSCALE_IP}
+      - ZENOH_PORT=${ZENOH_PORT:-7447}
+      - ROS_TCP_PORT=${ROS_TCP_PORT:-42000}
+    restart: unless-stopped
+
+  # ============================================================
+  # Zenoh Router（オプション：クラウド中継サーバー用）
+  # ============================================================
+  zenoh-router:
+    image: eclipse/zenoh:latest
+    container_name: vlabor-zenoh-router
+    network_mode: host
+    command: ["--listen", "tcp/0.0.0.0:7447"]
+    restart: unless-stopped
+    profiles:
+      - router

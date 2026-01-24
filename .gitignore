@@ -1,0 +1,29 @@
+# ROS2 build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+**/tailscale_oauth.env
+**/*.secret
+**/*.key
+
+# Large Docker exports
+docker/export/*.tar.gz
