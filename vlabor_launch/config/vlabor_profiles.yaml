@@ -1,3 +1,30 @@
+defaults:
+  ros_ip: "0.0.0.0"
+  ros_tcp_port: "10000"
+  auto_detect_ip: "true"
+  left_serial_port: "/dev/ttyACM0"
+  right_serial_port: "/dev/ttyACM1"
+  left_calibration_path: "${share:so101_description}/config/calibration/left_arm.json"
+  right_calibration_path: "${share:so101_description}/config/calibration/right_arm.json"
+  driver_backend: "feetech"
+  auto_enable: "false"
+  gripper_scale: "2.0"
+  left_webui_port: "8080"
+  right_webui_port: "8081"
+  enable_foxglove: "true"
+  enable_bridge: "true"
+  rviz_config: "${share:so101_description}/rviz/display.rviz"
+  rviz_vr_config: "${share:so101_description}/rviz/vr_teleop.rviz"
+  gazebo_args: ""
+  overhead_camera_config: "${share:vlabor_launch}/config/overhead_camera_c920.yaml"
+  mirror_single_config: "${share:vlabor_launch}/config/copy_map_single.yaml"
+  mirror_dual_config: "${share:vlabor_launch}/config/copy_map_dual.yaml"
+  fluent_vision_config: "/config/fluent_vision_system.yaml"
+  fluent_vision_update_serials: "false"
+  fluent_vision_serials_path: "/config/camera_serials.yaml"
+  fluent_vision_use_serials_script: "false"
+  fluent_vision_serials_script_path: ""
+
 profiles:
   # プロファイル = 起動構成のセット (launchを束ねる)
   # VR双腕テレオペ(標準) + 俯瞰カメラ(C920)

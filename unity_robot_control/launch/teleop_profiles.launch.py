@@ -12,6 +12,9 @@ from launch_ros.actions import Node
 
 
 _PLACEHOLDER_RE = re.compile(r'^\$\{([A-Za-z0-9_]+)\}$')
+_PLACEHOLDER_SHARE_RE = re.compile(r'^\$\{share:([A-Za-z0-9_]+)\}$')
+_INLINE_PLACEHOLDER_RE = re.compile(r'\$\{([A-Za-z0-9_]+)\}')
+_INLINE_SHARE_RE = re.compile(r'\$\{share:([A-Za-z0-9_]+)\}')
 
 
 def _load_config(path: str) -> Dict[str, Any]:
@@ -19,16 +22,42 @@ def _load_config(path: str) -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def _resolve_value(context, value: Any) -> Any:
+def _resolve_string(context, value: str, variables: Dict[str, Any]) -> Any:
+    match = _PLACEHOLDER_SHARE_RE.match(value.strip())
+    if match:
+        return get_package_share_directory(match.group(1))
+
+    match = _PLACEHOLDER_RE.match(value.strip())
+    if match:
+        key = match.group(1)
+        if key in variables:
+            return variables[key]
+        return LaunchConfiguration(key).perform(context)
+
+    def _replace_share(match_obj):
+        return get_package_share_directory(match_obj.group(1))
+
+    def _replace_var(match_obj):
+        key = match_obj.group(1)
+        if key in variables:
+            return str(variables[key])
+        try:
+            return LaunchConfiguration(key).perform(context)
+        except Exception:
+            return match_obj.group(0)
+
+    value = _INLINE_SHARE_RE.sub(_replace_share, value)
+    value = _INLINE_PLACEHOLDER_RE.sub(_replace_var, value)
+    return value
+
+
+def _resolve_value(context, value: Any, variables: Dict[str, Any]) -> Any:
     if isinstance(value, str):
-        match = _PLACEHOLDER_RE.match(value.strip())
-        if match:
-            return LaunchConfiguration(match.group(1)).perform(context)
-        return value
+        return _resolve_string(context, value, variables)
     if isinstance(value, list):
-        return [_resolve_value(context, v) for v in value]
+        return [_resolve_value(context, v, variables) for v in value]
     if isinstance(value, dict):
-        return {k: _resolve_value(context, v) for k, v in value.items()}
+        return {k: _resolve_value(context, v, variables) for k, v in value.items()}
     return value
 
 
@@ -49,8 +78,13 @@ def _get_launch_source(package: str, launch_file: str):
     return AnyLaunchDescriptionSource(launch_path)
 
 
-def _build_launch_arguments(context, args: Dict[str, Any], omit_empty: List[str]) -> Dict[str, Any]:
-    resolved = _resolve_value(context, args or {})
+def _build_launch_arguments(
+    context,
+    args: Dict[str, Any],
+    omit_empty: List[str],
+    variables: Dict[str, Any],
+) -> Dict[str, Any]:
+    resolved = _resolve_value(context, args or {}, variables)
     launch_args: Dict[str, Any] = {}
     for key, val in resolved.items():
         if key in omit_empty and (val is None or str(val).strip() == ''):
@@ -59,12 +93,12 @@ def _build_launch_arguments(context, args: Dict[str, Any], omit_empty: List[str]
     return launch_args
 
 
-def _build_node(context, entry: Dict[str, Any]):
-    params = _resolve_value(context, entry.get('parameters', {}))
+def _build_node(context, entry: Dict[str, Any], variables: Dict[str, Any]):
+    params = _resolve_value(context, entry.get('parameters', {}), variables)
     if isinstance(params, dict):
         params = [params]
 
-    remappings = _resolve_value(context, entry.get('remappings', []))
+    remappings = _resolve_value(context, entry.get('remappings', []), variables)
     if isinstance(remappings, dict):
         remappings = list(remappings.items())
 
@@ -75,22 +109,22 @@ def _build_node(context, entry: Dict[str, Any]):
         namespace=entry.get('namespace'),
         parameters=params if params else None,
         remappings=remappings if remappings else None,
-        arguments=_resolve_value(context, entry.get('arguments', [])) or None,
+        arguments=_resolve_value(context, entry.get('arguments', []), variables) or None,
         output=entry.get('output', 'screen'),
     )
 
 
-def _build_include(context, entry: Dict[str, Any]):
+def _build_include(context, entry: Dict[str, Any], variables: Dict[str, Any]):
     omit_empty = entry.get('omit_empty_args', [])
-    launch_args = _build_launch_arguments(context, entry.get('args', {}), omit_empty)
+    launch_args = _build_launch_arguments(context, entry.get('args', {}), omit_empty, variables)
     return IncludeLaunchDescription(
         _get_launch_source(entry['package'], entry['launch']),
         launch_arguments=launch_args.items(),
     )
 
 
-def _build_execute(context, entry: Dict[str, Any]):
-    cmd = _resolve_value(context, entry.get('cmd', []))
+def _build_execute(context, entry: Dict[str, Any], variables: Dict[str, Any]):
+    cmd = _resolve_value(context, entry.get('cmd', []), variables)
     if isinstance(cmd, str):
         cmd = [cmd]
     return ExecuteProcess(
@@ -109,18 +143,23 @@ def _launch_setup(context, *args, **kwargs):
     if not profile:
         return [LogInfo(msg=f"[unity_robot_control] profile not found: {profile_name}")]
 
+    variables = cfg.get('defaults', {})
+    profile_vars = profile.get('variables', {})
+    if isinstance(profile_vars, dict):
+        variables = {**variables, **profile_vars}
+
     actions = []
     for entry in profile.get('actions', []):
-        enabled = _resolve_value(context, entry.get('enabled', True))
+        enabled = _resolve_value(context, entry.get('enabled', True), variables)
         if not _as_bool(enabled):
             continue
         entry_type = entry.get('type')
         if entry_type == 'node':
-            actions.append(_build_node(context, entry))
+            actions.append(_build_node(context, entry, variables))
         elif entry_type == 'include':
-            actions.append(_build_include(context, entry))
+            actions.append(_build_include(context, entry, variables))
         elif entry_type == 'execute':
-            actions.append(_build_execute(context, entry))
+            actions.append(_build_execute(context, entry, variables))
         else:
             actions.append(LogInfo(msg=f"[unity_robot_control] unknown action type: {entry_type}"))
 

@@ -36,6 +36,10 @@
 - `docs/roles.md`
 - `vlabor_launch/config/roles.yaml`
 
+## 設定の置き場所
+各プロファイルで使う設定値は `vlabor_launch/config/vlabor_profiles.yaml` に集約する。
+`defaults` に共通値、各profileの `variables` に個別の上書きを書く。
+
 ## Leader/Followerのコピー (joint_state_mirror_node)
 leader側の `joint_states_single` を follower側の `joint_ctrl_single` に転送する。
 
