@@ -41,5 +41,5 @@
 - [ ] 異常時に `enable_flag` で停止できる
 
 ## 実行メモ
-- 起動: `scripts/start.sh`
-- 監視: `scripts/status.sh`
+- 起動: `scripts/vlabor`
+- 停止: `scripts/stop`

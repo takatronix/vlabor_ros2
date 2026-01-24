@@ -4,7 +4,7 @@
 1) build
    - `./scripts/build.sh`
 2) stop (必要な場合のみ)
-   - `./scripts/stop.sh`
+   - `./scripts/stop`
 3) start
    - `./scripts/vlabor <profile>` または `./scripts/vlabor` (メニュー)
 
