@@ -155,13 +155,14 @@ class LeRobotWriter:
         pq.write_table(table, parquet_path, compression='snappy')
 
         # Write episode metadata
+        # Note: Convert complex types to JSON strings for Parquet compatibility
         episode_meta = {
             "episode_index": episode_index,
             "task_index": task_index,
             "length": n_frames,
             "task": task,
-            "tags": tags or [],
-            "metadata": metadata or {},
+            "tags": json.dumps(tags or []),  # Store as JSON string
+            "metadata": json.dumps(metadata or {}),  # Store as JSON string
             "recorded_at": datetime.now().isoformat(),
         }
 
