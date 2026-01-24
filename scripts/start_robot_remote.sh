@@ -45,6 +45,8 @@ AUTO_ENABLE="${AUTO_ENABLE:-false}"
 LEFT_WEBUI_PORT="${LEFT_WEBUI_PORT:-8080}"
 RIGHT_WEBUI_PORT="${RIGHT_WEBUI_PORT:-8081}"
 FOXGLOVE="${FOXGLOVE:-true}"
+PROFILE="${PROFILE:-dual_teleop_so101}"
+LAUNCH_CONFIG="${LAUNCH_CONFIG:-}"
 
 # ==============================================================================
 # ROS2環境セットアップ
@@ -148,50 +150,6 @@ start_zenoh_bridge() {
 }
 
 # ==============================================================================
-# WebUI起動
-# ==============================================================================
-start_webui() {
-    print_status "WebUIを起動中..."
-
-    # 左アームWebUI
-    ros2 run unity_robot_control so101_webui_node --ros-args \
-        -r __node:=so101_webui_left \
-        -p web_port:=${LEFT_WEBUI_PORT} \
-        -p arm_namespaces:=[left_arm] \
-        2>&1 | tee /tmp/webui_left.log &
-    LEFT_WEBUI_PID=$!
-
-    # 右アームWebUI
-    ros2 run unity_robot_control so101_webui_node --ros-args \
-        -r __node:=so101_webui_right \
-        -p web_port:=${RIGHT_WEBUI_PORT} \
-        -p arm_namespaces:=[right_arm] \
-        2>&1 | tee /tmp/webui_right.log &
-    RIGHT_WEBUI_PID=$!
-
-    print_status "WebUI起動完了"
-    print_status "  左アーム: http://localhost:${LEFT_WEBUI_PORT}/"
-    print_status "  右アーム: http://localhost:${RIGHT_WEBUI_PORT}/"
-}
-
-# ==============================================================================
-# Foxglove Bridge起動
-# ==============================================================================
-start_foxglove() {
-    FOXGLOVE_PID=""
-    if [ "${FOXGLOVE}" = "true" ]; then
-        if ros2 pkg prefix foxglove_bridge >/dev/null 2>&1; then
-            print_status "Foxglove Bridge を起動中..."
-            ros2 launch foxglove_bridge foxglove_bridge_launch.xml \
-                2>&1 | tee /tmp/foxglove.log &
-            FOXGLOVE_PID=$!
-        else
-            print_warn "foxglove_bridge パッケージがインストールされていません"
-        fi
-    fi
-}
-
-# ==============================================================================
 # メイン
 # ==============================================================================
 main() {
@@ -204,9 +162,6 @@ main() {
     setup_ros2
     check_tailscale
     start_zenoh_bridge
-    start_webui
-    start_foxglove
-
     echo ""
     print_status "=========================================="
     print_status "Robot側の準備完了!"
@@ -226,9 +181,6 @@ main() {
     cleanup() {
         print_status "終了処理中..."
         kill $ZENOH_PID 2>/dev/null || true
-        kill $LEFT_WEBUI_PID 2>/dev/null || true
-        kill $RIGHT_WEBUI_PID 2>/dev/null || true
-        kill $FOXGLOVE_PID 2>/dev/null || true
         print_status "終了しました"
     }
     trap cleanup EXIT
@@ -242,13 +194,23 @@ main() {
         CALIB_ARGS="${CALIB_ARGS} right_calibration_path:=${RIGHT_CALIB_PATH}"
     fi
 
+    CONFIG_ARG=""
+    if [ -n "${LAUNCH_CONFIG}" ]; then
+        CONFIG_ARG="config:=${LAUNCH_CONFIG}"
+    fi
+
     # メインのテレオペ起動（Unity TCP Endpointなし版）
     # Note: VR側からZenoh経由でトピックが届く
-    ros2 launch unity_robot_control vr_dual_arm_teleop_robot_only.launch.py \
+    ros2 launch vlabor_launch vlabor.launch.py \
+        profile:=${PROFILE} \
+        ${CONFIG_ARG} \
         left_serial_port:=${LEFT_SERIAL_PORT} \
         right_serial_port:=${RIGHT_SERIAL_PORT} \
         driver_backend:=${DRIVER_BACKEND} \
         auto_enable:=${AUTO_ENABLE} \
+        left_webui_port:=${LEFT_WEBUI_PORT} \
+        right_webui_port:=${RIGHT_WEBUI_PORT} \
+        enable_foxglove:=${FOXGLOVE} \
         ${CALIB_ARGS} \
         2>&1 | tee /tmp/robot_teleop.log
 }

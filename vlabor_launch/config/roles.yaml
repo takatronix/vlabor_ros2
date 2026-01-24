@@ -1,0 +1,15 @@
+# 役割定義 (実体名と役割を分離)
+roles:
+  source: "vr"        # vr / physical / recorded
+  left_arm: "follower"
+  right_arm: "follower"
+  left_arm_2: "follower"
+  right_arm_2: "follower"
+
+# 物理デバイスと論理名の対応
+# ずれていたら、このマッピングだけスワップする
+device_map:
+  left_arm: "/dev/ttyACM0"
+  right_arm: "/dev/ttyACM1"
+  left_arm_2: "/dev/ttyACM2"
+  right_arm_2: "/dev/ttyACM3"

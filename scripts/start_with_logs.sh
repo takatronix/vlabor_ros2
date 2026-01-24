@@ -50,7 +50,6 @@ setup_ros2() {
 }
 
 LOG_FILE="${LOG_FILE:-/tmp/vr_ros2_teleop.log}"
-WEBUI_LOG_FILE="${WEBUI_LOG_FILE:-/tmp/vr_ros2_webui.log}"
 
 # Defaults (override via env)
 LEFT_SERIAL_PORT="${LEFT_SERIAL_PORT:-/dev/ttyACM0}"
@@ -67,6 +66,8 @@ AUTO_DETECT_IP="${AUTO_DETECT_IP:-true}"
 LEFT_WEBUI_PORT="${LEFT_WEBUI_PORT:-8080}"
 RIGHT_WEBUI_PORT="${RIGHT_WEBUI_PORT:-8081}"
 FOXGLOVE="${FOXGLOVE:-true}"
+PROFILE="${PROFILE:-vr_teleop_so101}"
+LAUNCH_CONFIG="${LAUNCH_CONFIG:-}"
 
 setup_ros2
 
@@ -74,38 +75,6 @@ print_status "ログ出力: ${LOG_FILE}"
 print_status "WebUI (左アーム): http://localhost:${LEFT_WEBUI_PORT}/"
 print_status "WebUI (右アーム): http://localhost:${RIGHT_WEBUI_PORT}/"
 print_status "フォアグラウンドで起動します (Ctrl+Cで停止)"
-
-# WebUIをバックグラウンドで起動（左アーム）
-ros2 run unity_robot_control so101_webui_node --ros-args \
-  -r __node:=so101_webui_left \
-  -p web_port:=${LEFT_WEBUI_PORT} \
-  -p arm_namespaces:=[left_arm] \
-  2>&1 | tee "${WEBUI_LOG_FILE}.left" &
-LEFT_WEBUI_PID=$!
-
-# WebUIをバックグラウンドで起動（右アーム）
-ros2 run unity_robot_control so101_webui_node --ros-args \
-  -r __node:=so101_webui_right \
-  -p web_port:=${RIGHT_WEBUI_PORT} \
-  -p arm_namespaces:=[right_arm] \
-  2>&1 | tee "${WEBUI_LOG_FILE}.right" &
-RIGHT_WEBUI_PID=$!
-
-# Foxglove Bridge（オプション）
-FOXGLOVE_PID=""
-if [ "${FOXGLOVE}" = "true" ]; then
-    if ros2 pkg prefix foxglove_bridge >/dev/null 2>&1; then
-        print_status "Foxglove Bridge を起動中..."
-        ros2 launch foxglove_bridge foxglove_bridge_launch.xml \
-            2>&1 | tee /tmp/vr_ros2_foxglove.log &
-        FOXGLOVE_PID=$!
-    else
-        print_error "foxglove_bridge パッケージがインストールされていません"
-    fi
-fi
-
-# メインのテレオペ起動（フォアグラウンド）
-trap "kill $LEFT_WEBUI_PID $RIGHT_WEBUI_PID $FOXGLOVE_PID 2>/dev/null || true" EXIT
 
 # キャリブレーションパスが指定されていればlaunch引数に追加
 CALIB_ARGS=""
@@ -116,7 +85,14 @@ if [ -n "${RIGHT_CALIB_PATH}" ]; then
     CALIB_ARGS="${CALIB_ARGS} right_calibration_path:=${RIGHT_CALIB_PATH}"
 fi
 
-ros2 launch unity_robot_control vr_dual_arm_teleop_direct.launch.py \
+CONFIG_ARG=""
+if [ -n "${LAUNCH_CONFIG}" ]; then
+    CONFIG_ARG="config:=${LAUNCH_CONFIG}"
+fi
+
+ros2 launch vlabor_launch vlabor.launch.py \
+  profile:=${PROFILE} \
+  ${CONFIG_ARG} \
   ros_ip:=${ROS_IP} \
   ros_tcp_port:=${ROS_TCP_PORT} \
   auto_detect_ip:=${AUTO_DETECT_IP} \
@@ -124,5 +100,8 @@ ros2 launch unity_robot_control vr_dual_arm_teleop_direct.launch.py \
   right_serial_port:=${RIGHT_SERIAL_PORT} \
   driver_backend:=${DRIVER_BACKEND} \
   auto_enable:=${AUTO_ENABLE} \
+  left_webui_port:=${LEFT_WEBUI_PORT} \
+  right_webui_port:=${RIGHT_WEBUI_PORT} \
+  enable_foxglove:=${FOXGLOVE} \
   ${CALIB_ARGS} \
   2>&1 | tee "${LOG_FILE}"

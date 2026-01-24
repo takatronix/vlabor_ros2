@@ -64,24 +64,35 @@ piper_ctrl_single_node (left/right, 参考)
 - Piper I/F仕様: `docs/piper_interface_spec.md`
 - SO101 I/F仕様: `docs/so101_interface_spec.md`
 - SO101 vs Piper 比較: `docs/robot_interface_comparison.md`
+- 役割・命名ルール: `docs/roles.md`
+- Profiles/Roleの概要: `docs/profiles.md`
 
 ## 起動（VRテレオペ直結）
+短い起動コマンド:
 ```bash
-ros2 launch unity_robot_control vr_dual_arm_teleop_direct.launch.py \
+./scripts/vlabor vr_teleop_so101
+```
+
+詳細指定する場合:
+```bash
+ros2 launch vlabor_launch vlabor.launch.py \
+  profile:=vr_teleop_so101 \
   left_serial_port:=/dev/ttyACM0 right_serial_port:=/dev/ttyACM1 \
   driver_backend:=mock
 ```
 
 実機の場合:
 ```bash
-ros2 launch unity_robot_control vr_dual_arm_teleop_direct.launch.py \
+ros2 launch vlabor_launch vlabor.launch.py \
+  profile:=vr_teleop_so101 \
   left_serial_port:=/dev/ttyACM0 right_serial_port:=/dev/ttyACM1 \
   driver_backend:=feetech
 ```
 
 キャリブJSONを指定する場合:
 ```bash
-ros2 launch unity_robot_control vr_dual_arm_teleop_direct.launch.py \
+ros2 launch vlabor_launch vlabor.launch.py \
+  profile:=vr_teleop_so101 \
   left_calibration_path:=/home/takatronix/.cache/huggingface/lerobot/calibration/robots/so101_follower/5AB9069153.json \
   right_calibration_path:=/home/takatronix/.cache/huggingface/lerobot/calibration/robots/so101_follower/5AB9069153.json \
   driver_backend:=feetech

@@ -1,0 +1,108 @@
+#!/bin/bash
+# Simple launcher for vlabor profiles
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VR_ROS2_DIR="$(dirname "$SCRIPT_DIR")"
+ROS2_WS="$(dirname "$(dirname "$VR_ROS2_DIR")")"
+
+print_usage() {
+    echo "Usage: vlabor <profile> [key:=value ...]"
+    echo ""
+    echo "Profiles:"
+    echo "  vr_teleop_so101"
+    echo "  single_teleop_so101"
+    echo "  dual_teleop_so101"
+    echo "  vr_server_only"
+    echo "  rviz_so101"
+    echo "  gazebo_so101"
+    echo "  overhead_camera"
+    echo ""
+    echo "Examples:"
+    echo "  vlabor vr_teleop_so101"
+    echo "  vlabor rviz_so101 rviz_config:=/path/to/file.rviz"
+}
+
+select_profile() {
+    local profiles=(
+        "single_teleop_so101:VR片腕テレオペ(左)"
+        "dual_teleop_so101:ロボット側のみ(両腕)"
+        "vr_teleop_so101:VR双腕テレオペ(標準)"
+    )
+
+    local index=0
+    local key=""
+
+    while true; do
+        printf "\033[2J\033[H"
+        echo "Select profile (↑/↓, Enter):"
+        for i in "${!profiles[@]}"; do
+            local name="${profiles[$i]%%:*}"
+            local desc="${profiles[$i]#*:}"
+            if [ "$i" -eq "$index" ]; then
+                printf "> %s  - %s\n" "$name" "$desc"
+            else
+                printf "  %s  - %s\n" "$name" "$desc"
+            fi
+        done
+
+        IFS= read -rsn1 key
+        if [ "$key" = "" ]; then
+            PROFILE="${profiles[$index]%%:*}"
+            return
+        fi
+        if [ "$key" = $'\x1b' ]; then
+            read -rsn2 key
+            case "$key" in
+                "[A")
+                    if [ "$index" -gt 0 ]; then
+                        index=$((index - 1))
+                    fi
+                    ;;
+                "[B")
+                    if [ "$index" -lt $((${#profiles[@]} - 1)) ]; then
+                        index=$((index + 1))
+                    fi
+                    ;;
+            esac
+        fi
+    done
+}
+
+setup_ros2() {
+    if [ -f /opt/ros/humble/setup.bash ]; then
+        source /opt/ros/humble/setup.bash
+    else
+        echo "ROS2 Humble not found" >&2
+        exit 1
+    fi
+
+    if [ -f "$ROS2_WS/install/setup.bash" ]; then
+        source "$ROS2_WS/install/setup.bash"
+    else
+        echo "Workspace not built: $ROS2_WS" >&2
+        exit 1
+    fi
+
+    if [ -n "$PYTHONPATH" ]; then
+        PYTHONPATH="$(echo "$PYTHONPATH" | tr ':' '\n' | grep -v 'python3.13' | paste -sd ':' -)"
+    fi
+    export PYTHONPATH="/home/takatronix/ros2_ws/install/vr_haptic_msgs/local/lib/python3.10/dist-packages:/home/takatronix/.local/lib/python3.10/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    print_usage
+    exit 0
+fi
+
+if [ $# -lt 1 ]; then
+    select_profile
+else
+    PROFILE="$1"
+    shift
+fi
+
+setup_ros2
+
+ros2 launch vlabor_launch vlabor.launch.py profile:=${PROFILE} "$@"

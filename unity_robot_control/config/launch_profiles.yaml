@@ -1,0 +1,150 @@
+profiles:
+  vr_dual_arm_teleop:
+    description: "VR dual-arm teleop (local) + WebUI + Foxglove"
+    actions:
+      - type: include
+        package: unity_robot_control
+        launch: vr_dual_arm_teleop_direct.launch.py
+        args:
+          ros_ip: ${ros_ip}
+          ros_tcp_port: ${ros_tcp_port}
+          auto_detect_ip: ${auto_detect_ip}
+          left_serial_port: ${left_serial_port}
+          right_serial_port: ${right_serial_port}
+          driver_backend: ${driver_backend}
+          auto_enable: ${auto_enable}
+          gripper_scale: ${gripper_scale}
+          left_calibration_path: ${left_calibration_path}
+          right_calibration_path: ${right_calibration_path}
+        omit_empty_args:
+          - left_calibration_path
+          - right_calibration_path
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_left
+        parameters:
+          web_port: ${left_webui_port}
+          arm_namespaces: [left_arm]
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_right
+        parameters:
+          web_port: ${right_webui_port}
+          arm_namespaces: [right_arm]
+      - type: include
+        package: foxglove_bridge
+        launch: foxglove_bridge_launch.xml
+        enabled: ${enable_foxglove}
+
+  vr_dual_arm_teleop_3cam:
+    description: "VR dual-arm teleop + WebUI + Foxglove + 3 cameras (fluent_vision_system)"
+    actions:
+      - type: include
+        package: unity_robot_control
+        launch: vr_dual_arm_teleop_direct.launch.py
+        args:
+          ros_ip: ${ros_ip}
+          ros_tcp_port: ${ros_tcp_port}
+          auto_detect_ip: ${auto_detect_ip}
+          left_serial_port: ${left_serial_port}
+          right_serial_port: ${right_serial_port}
+          driver_backend: ${driver_backend}
+          auto_enable: ${auto_enable}
+          gripper_scale: ${gripper_scale}
+          left_calibration_path: ${left_calibration_path}
+          right_calibration_path: ${right_calibration_path}
+        omit_empty_args:
+          - left_calibration_path
+          - right_calibration_path
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_left
+        parameters:
+          web_port: ${left_webui_port}
+          arm_namespaces: [left_arm]
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_right
+        parameters:
+          web_port: ${right_webui_port}
+          arm_namespaces: [right_arm]
+      - type: include
+        package: fluent_vision_system
+        launch: run.py
+        args:
+          config: ${fluent_vision_config}
+          update_camera_serials: ${fluent_vision_update_serials}
+          camera_serials_path: ${fluent_vision_serials_path}
+          use_serials_script: ${fluent_vision_use_serials_script}
+          serials_script_path: ${fluent_vision_serials_script_path}
+      - type: include
+        package: foxglove_bridge
+        launch: foxglove_bridge_launch.xml
+        enabled: ${enable_foxglove}
+
+  teleop_standard:
+    description: "Standard teleop (ros2_control-based pipeline)"
+    actions:
+      - type: include
+        package: unity_robot_control
+        launch: vr_dual_arm_teleop.launch.py
+        args:
+          ros_ip: ${ros_ip}
+          ros_tcp_port: ${ros_tcp_port}
+          auto_detect_ip: ${auto_detect_ip}
+          enable_bridge: ${enable_bridge}
+      - type: include
+        package: foxglove_bridge
+        launch: foxglove_bridge_launch.xml
+        enabled: ${enable_foxglove}
+
+  remote_robot_only:
+    description: "Remote robot side (no Unity TCP Endpoint)"
+    actions:
+      - type: include
+        package: unity_robot_control
+        launch: vr_dual_arm_teleop_robot_only.launch.py
+        args:
+          left_serial_port: ${left_serial_port}
+          right_serial_port: ${right_serial_port}
+          driver_backend: ${driver_backend}
+          auto_enable: ${auto_enable}
+          gripper_scale: ${gripper_scale}
+          left_calibration_path: ${left_calibration_path}
+          right_calibration_path: ${right_calibration_path}
+        omit_empty_args:
+          - left_calibration_path
+          - right_calibration_path
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_left
+        parameters:
+          web_port: ${left_webui_port}
+          arm_namespaces: [left_arm]
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_right
+        parameters:
+          web_port: ${right_webui_port}
+          arm_namespaces: [right_arm]
+      - type: include
+        package: foxglove_bridge
+        launch: foxglove_bridge_launch.xml
+        enabled: ${enable_foxglove}
+
+  vr_server_only:
+    description: "VR server only (Unity TCP Endpoint)"
+    actions:
+      - type: node
+        package: ros_tcp_endpoint
+        executable: default_server_endpoint
+        name: unity_tcp_endpoint
+        parameters:
+          ROS_IP: ${ros_ip}
+          ROS_TCP_PORT: ${ros_tcp_port}

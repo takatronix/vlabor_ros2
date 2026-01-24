@@ -1,0 +1,171 @@
+profiles:
+  # プロファイル = 起動構成のセット (launchを束ねる)
+  # VR双腕テレオペ(標準) + 俯瞰カメラ(C920)
+  vr_teleop_so101:
+    description: "VR dual-arm teleop + overhead camera (C920)"
+    actions:
+      - type: include
+        package: fv_camera
+        launch: fv_camera_launch.py
+        args:
+          node_name: overhead_camera
+          config_file: ${overhead_camera_config}
+      - type: include
+        package: unity_robot_control
+        launch: vr_dual_arm_teleop_direct.launch.py
+        args:
+          ros_ip: ${ros_ip}
+          ros_tcp_port: ${ros_tcp_port}
+          auto_detect_ip: ${auto_detect_ip}
+          left_serial_port: ${left_serial_port}
+          right_serial_port: ${right_serial_port}
+          driver_backend: ${driver_backend}
+          auto_enable: ${auto_enable}
+          gripper_scale: ${gripper_scale}
+          left_calibration_path: ${left_calibration_path}
+          right_calibration_path: ${right_calibration_path}
+        omit_empty_args:
+          - left_calibration_path
+          - right_calibration_path
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_left
+        parameters:
+          web_port: ${left_webui_port}
+          arm_namespaces: [left_arm]
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_right
+        parameters:
+          web_port: ${right_webui_port}
+          arm_namespaces: [right_arm]
+      - type: include
+        package: foxglove_bridge
+        launch: foxglove_bridge_launch.xml
+        enabled: ${enable_foxglove}
+
+  # VR片腕テレオペ(左) + 俯瞰カメラ(C920)
+  single_teleop_so101:
+    description: "VR single-arm teleop (left) + overhead camera"
+    actions:
+      - type: include
+        package: fv_camera
+        launch: fv_camera_launch.py
+        args:
+          node_name: overhead_camera
+          config_file: ${overhead_camera_config}
+      - type: include
+        package: unity_robot_control
+        launch: vr_single_arm_teleop_direct.launch.py
+        args:
+          ros_ip: ${ros_ip}
+          ros_tcp_port: ${ros_tcp_port}
+          auto_detect_ip: ${auto_detect_ip}
+          serial_port: ${left_serial_port}
+          calibration_path: ${left_calibration_path}
+          driver_backend: ${driver_backend}
+          auto_enable: ${auto_enable}
+          gripper_scale: ${gripper_scale}
+        omit_empty_args:
+          - calibration_path
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_left
+        parameters:
+          web_port: ${left_webui_port}
+          arm_namespaces: [left_arm]
+      - type: include
+        package: foxglove_bridge
+        launch: foxglove_bridge_launch.xml
+        enabled: ${enable_foxglove}
+
+  # ロボット側のみ(両腕) + 俯瞰カメラ(C920)
+  dual_teleop_so101:
+    description: "Dual-arm teleop (robot side) + overhead camera"
+    actions:
+      - type: include
+        package: fv_camera
+        launch: fv_camera_launch.py
+        args:
+          node_name: overhead_camera
+          config_file: ${overhead_camera_config}
+      - type: include
+        package: unity_robot_control
+        launch: vr_dual_arm_teleop_robot_only.launch.py
+        args:
+          left_serial_port: ${left_serial_port}
+          right_serial_port: ${right_serial_port}
+          driver_backend: ${driver_backend}
+          auto_enable: ${auto_enable}
+          gripper_scale: ${gripper_scale}
+          left_calibration_path: ${left_calibration_path}
+          right_calibration_path: ${right_calibration_path}
+        omit_empty_args:
+          - left_calibration_path
+          - right_calibration_path
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_left
+        parameters:
+          web_port: ${left_webui_port}
+          arm_namespaces: [left_arm]
+      - type: node
+        package: unity_robot_control
+        executable: so101_webui_node
+        name: so101_webui_right
+        parameters:
+          web_port: ${right_webui_port}
+          arm_namespaces: [right_arm]
+      - type: include
+        package: foxglove_bridge
+        launch: foxglove_bridge_launch.xml
+        enabled: ${enable_foxglove}
+
+  # VRサーバーのみ(Unity TCP)
+  vr_server_only:
+    description: "VR server only (Unity TCP Endpoint)"
+    actions:
+      - type: node
+        package: ros_tcp_endpoint
+        executable: default_server_endpoint
+        name: unity_tcp_endpoint
+        parameters:
+          ROS_IP: ${ros_ip}
+          ROS_TCP_PORT: ${ros_tcp_port}
+
+  # RViz表示のみ
+  rviz_so101:
+    description: "RViz only (SO101 display)"
+    actions:
+      - type: include
+        package: so101_description
+        launch: display_robot.launch.py
+        args:
+          display_config: ${rviz_config}
+
+  # Gazeboのみ
+  gazebo_so101:
+    description: "Gazebo (ros_gz_sim)"
+    actions:
+      - type: include
+        package: ros_gz_sim
+        launch: gz_sim.launch.py
+        args:
+          gz_args: ${gazebo_args}
+        omit_empty_args:
+          - gz_args
+
+  # 俯瞰カメラ(C920)
+  overhead_camera:
+    description: "Overhead camera (C920 via fv_camera)"
+    actions:
+      - type: include
+        package: fv_camera
+        launch: fv_camera_launch.py
+        args:
+          node_name: overhead_camera
+          config_file: ${overhead_camera_config}

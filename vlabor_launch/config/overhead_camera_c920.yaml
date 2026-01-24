@@ -1,0 +1,22 @@
+fv_camera:
+  ros__parameters:
+    # 俯瞰カメラ(C920)の設定
+    camera_selection:
+      selection_method: "index"
+      device_index: 0
+    # topic: /overhead_camera/image_raw
+    camera:
+      width: 1280
+      height: 720
+      fps: 30
+    camera_info:
+      enable_compressed_topics: true
+      compressed_quality: 85
+    tf:
+      enabled: true
+      base_frame: "base_link"
+      camera_frame: "overhead_camera_link"
+      optical_frame: "overhead_camera_optical_frame"
+    topics:
+      color: "image_raw"
+      color_compressed: "image_raw/compressed"

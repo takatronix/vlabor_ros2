@@ -35,6 +35,8 @@ ROBOT_TAILSCALE_IP="${ROBOT_TAILSCALE_IP:-}"          # Robot側のTailscale IP
 ZENOH_PORT="${ZENOH_PORT:-7447}"                       # Zenoh Bridgeポート
 ROS_IP="${ROS_IP:-0.0.0.0}"                           # Unity TCP Endpoint IP
 ROS_TCP_PORT="${ROS_TCP_PORT:-42000}"                 # Unity TCP Endpoint Port
+PROFILE="${PROFILE:-vr_server_only}"
+LAUNCH_CONFIG="${LAUNCH_CONFIG:-}"
 
 # ==============================================================================
 # ROS2環境セットアップ
@@ -148,24 +150,6 @@ start_zenoh_bridge() {
 }
 
 # ==============================================================================
-# Unity TCP Endpoint起動
-# ==============================================================================
-start_unity_endpoint() {
-    print_status "Unity TCP Endpoint を起動中..."
-    print_status "  IP: ${ROS_IP}"
-    print_status "  Port: ${ROS_TCP_PORT}"
-
-    ros2 run ros_tcp_endpoint default_server_endpoint --ros-args \
-        -p ROS_IP:="${ROS_IP}" \
-        -p ROS_TCP_PORT:=${ROS_TCP_PORT} \
-        2>&1 | tee /tmp/unity_tcp_endpoint.log &
-    UNITY_PID=$!
-
-    sleep 1
-    print_status "Unity TCP Endpoint起動完了 (PID: ${UNITY_PID})"
-}
-
-# ==============================================================================
 # メイン
 # ==============================================================================
 main() {
@@ -178,7 +162,25 @@ main() {
     setup_ros2
     check_tailscale
     start_zenoh_bridge
-    start_unity_endpoint
+    CONFIG_ARG=""
+    if [ -n "${LAUNCH_CONFIG}" ]; then
+        CONFIG_ARG="config:=${LAUNCH_CONFIG}"
+    fi
+
+    print_status "Unity TCP Endpoint を起動中..."
+    print_status "  IP: ${ROS_IP}"
+    print_status "  Port: ${ROS_TCP_PORT}"
+
+    ros2 launch vlabor_launch vlabor.launch.py \
+        profile:=${PROFILE} \
+        ${CONFIG_ARG} \
+        ros_ip:=${ROS_IP} \
+        ros_tcp_port:=${ROS_TCP_PORT} \
+        2>&1 | tee /tmp/unity_tcp_endpoint.log &
+    UNITY_PID=$!
+
+    sleep 1
+    print_status "Unity TCP Endpoint起動完了 (PID: ${UNITY_PID})"
 
     echo ""
     print_status "=========================================="

@@ -22,6 +22,10 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+print_warning() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  VR ROS2 ビルド${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -38,7 +42,7 @@ fi
 cd "$ROS2_WS"
 
 # ビルド対象パッケージ
-PACKAGES=(
+ALL_PACKAGES=(
     "so101_description"
     "so101_controller"
     "so101_hardware_interface"
@@ -46,7 +50,19 @@ PACKAGES=(
     "so101_bringup"
     "ros_tcp_endpoint"
     "unity_robot_control"
+    "vlabor_launch"
+    "fv_camera"
+    "fluent_lib"
 )
+
+PACKAGES=()
+for pkg in "${ALL_PACKAGES[@]}"; do
+    if find "${ROS2_WS}/src" -path "*/${pkg}/package.xml" -print -quit | grep -q .; then
+        PACKAGES+=("$pkg")
+    else
+        print_warning "パッケージが見つからないためスキップ: ${pkg}"
+    fi
+done
 
 print_status "ビルド対象パッケージ:"
 for pkg in "${PACKAGES[@]}"; do
@@ -62,6 +78,7 @@ if [ $? -eq 0 ]; then
     echo ""
     print_status "ビルド成功！"
     print_status "環境をソース: source $ROS2_WS/install/setup.bash"
+    source "$ROS2_WS/install/setup.bash"
 else
     echo ""
     print_error "ビルド失敗"
