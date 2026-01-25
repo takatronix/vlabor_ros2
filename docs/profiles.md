@@ -12,6 +12,7 @@
 singleのleader/follower:
 - leader: `right_arm` (/dev/ttyACM1)
 - follower: `left_arm` (/dev/ttyACM0)
+  - singleテレオペでは follower(left_arm) を auto_enable=true、leader(right_arm) を auto_enable=false にしている
 
 ## Recorderの組み込み
 以下のprofileは `lerobot_recorder` を同時起動する:

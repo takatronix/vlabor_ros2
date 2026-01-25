@@ -105,6 +105,10 @@ NODES=(
     "tf_RosPublisher"
     "tf_RosSubscriber"
     "target_pose_RosPublisher"
+    "joint_state_mirror_single"
+    "joint_state_mirror_dual"
+    "joint_state_mirror_node"
+    "rqt_gui_cpp_node"
 )
 
 for node in "${NODES[@]}"; do

@@ -6,6 +6,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VR_ROS2_DIR="$(dirname "$SCRIPT_DIR")"
 ROS2_WS="$(dirname "$(dirname "$VR_ROS2_DIR")")"
+LAUNCH_PID_FILE="/tmp/vr_teleop_launch.pid"
 
 print_usage() {
     echo "Usage: run <profile> [key:=value ...]"
@@ -105,4 +106,9 @@ fi
 
 setup_ros2
 
-ros2 launch vlabor_launch vlabor.launch.py profile:=${PROFILE} "$@"
+trap 'rm -f "$LAUNCH_PID_FILE"' EXIT
+
+ros2 launch vlabor_launch vlabor.launch.py profile:=${PROFILE} "$@" &
+launch_pid=$!
+echo "$launch_pid" > "$LAUNCH_PID_FILE"
+wait "$launch_pid"
