@@ -48,3 +48,8 @@ profile:
       package: foxglove_bridge
       launch: foxglove_bridge_launch.xml
       enabled: ${enable_foxglove}
+    - type: include
+      package: so101_description
+      launch: display.launch.py
+      args:
+        display_config: ${rviz_vr_config}

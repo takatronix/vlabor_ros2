@@ -19,4 +19,4 @@ fv_camera:
       optical_frame: "overhead_camera_optical_frame"
     topics:
       color: "image_raw"
-      color_compressed: "image_raw/compressed"
+      color_compressed: /overhead_camera/image_raw/compressed"

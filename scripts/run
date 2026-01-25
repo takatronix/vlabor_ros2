@@ -92,6 +92,15 @@ setup_ros2() {
     export PYTHONPATH="/home/takatronix/ros2_ws/install/vr_haptic_msgs/local/lib/python3.10/dist-packages:/home/takatronix/.local/lib/python3.10/site-packages${PYTHONPATH:+:$PYTHONPATH}"
 }
 
+setup_display() {
+    if [ -z "${DISPLAY:-}" ]; then
+        export DISPLAY=":0"
+    fi
+    if [ -z "${XAUTHORITY:-}" ] && [ -f "$HOME/.Xauthority" ]; then
+        export XAUTHORITY="$HOME/.Xauthority"
+    fi
+}
+
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     print_usage
     exit 0
@@ -105,6 +114,7 @@ else
 fi
 
 setup_ros2
+setup_display
 
 trap 'rm -f "$LAUNCH_PID_FILE"' EXIT
 

@@ -72,6 +72,7 @@ piper_ctrl_single_node (left/right, 参考)
 ```bash
 ./scripts/run so101_vr_dual_teleop
 ```
+VR/単腕/双腕テレオペのプロファイルはRViz（`so101_description/rviz/vr_teleop.rviz`）が自動起動します。
 
 詳細指定する場合:
 ```bash
