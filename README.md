@@ -70,7 +70,7 @@ piper_ctrl_single_node (left/right, 参考)
 ## 起動（VRテレオペ直結）
 短い起動コマンド:
 ```bash
-./scripts/vlabor so101_vr_dual_teleop
+./scripts/run so101_vr_dual_teleop
 ```
 
 詳細指定する場合:

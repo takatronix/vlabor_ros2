@@ -25,7 +25,7 @@ singleのleader/follower:
 
 起動:
 ```bash
-./scripts/vlabor <profile>
+./scripts/run <profile>
 ```
 
 ## Roleとは

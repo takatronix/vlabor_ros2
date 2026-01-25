@@ -6,7 +6,7 @@
 2) stop (必要な場合のみ)
    - `./scripts/stop`
 3) start
-   - `./scripts/vlabor <profile>` または `./scripts/vlabor` (メニュー)
+   - `./scripts/run <profile>` または `./scripts/run` (メニュー)
 
 ## ドキュメント更新 (必須)
 - 仕様や起動方法を変えたら README / node docs を必ず更新すること。
@@ -29,7 +29,7 @@
 - `/tmp/vr_ros2_*` などの一時ログは必要に応じて削除して良い。
 
 ## テスト/検証
-- 変更後に `./scripts/vlabor` で起動確認できること。
+- 変更後に `./scripts/run` で起動確認できること。
 - テストまでOKなら commit & push を行う。
 
 ## テストファイル運用

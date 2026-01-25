@@ -8,7 +8,7 @@ VR_ROS2_DIR="$(dirname "$SCRIPT_DIR")"
 ROS2_WS="$(dirname "$(dirname "$VR_ROS2_DIR")")"
 
 print_usage() {
-    echo "Usage: vlabor <profile> [key:=value ...]"
+    echo "Usage: run <profile> [key:=value ...]"
     echo ""
     echo "Profiles:"
     echo "  so101_vr_dual_teleop"
@@ -20,8 +20,8 @@ print_usage() {
     echo "  overhead_camera"
     echo ""
     echo "Examples:"
-    echo "  vlabor so101_vr_dual_teleop"
-    echo "  vlabor rviz_so101 rviz_config:=/path/to/file.rviz"
+    echo "  run so101_vr_dual_teleop"
+    echo "  run rviz_so101 rviz_config:=/path/to/file.rviz"
 }
 
 select_profile() {
