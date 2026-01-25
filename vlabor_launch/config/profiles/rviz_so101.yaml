@@ -1,0 +1,9 @@
+profile:
+  name: rviz_so101
+  description: "RViz only (SO101 display)"
+  actions:
+    - type: include
+      package: so101_description
+      launch: display_robot.launch.py
+      args:
+        display_config: ${rviz_config}

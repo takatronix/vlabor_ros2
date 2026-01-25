@@ -13,7 +13,7 @@ ros2 launch vlabor_launch vlabor.launch.py profile:=so101_vr_dual_teleop
 ```
 
 ## プロファイル
-`config/vlabor_profiles.yaml` に定義されています。
+`config/vlabor_profiles.yaml` に defaults / include list を置き、\n実体は `config/profiles/*.yaml` に分割する。
 
 追加プロファイル:
 - `overhead_camera` (C920, fv_camera)

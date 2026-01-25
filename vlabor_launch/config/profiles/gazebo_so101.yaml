@@ -1,0 +1,11 @@
+profile:
+  name: gazebo_so101
+  description: "Gazebo (ros_gz_sim)"
+  actions:
+    - type: include
+      package: ros_gz_sim
+      launch: gz_sim.launch.py
+      args:
+        gz_args: ${gazebo_args}
+      omit_empty_args:
+        - gz_args

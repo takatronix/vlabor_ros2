@@ -20,7 +20,8 @@ singleのleader/follower:
 - so101_dual_teleop (preset: so101_dual_leader)
 
 設定ファイル:
-- `vlabor_launch/config/vlabor_profiles.yaml`
+- `vlabor_launch/config/vlabor_profiles.yaml` (defaults + include list)
+- `vlabor_launch/config/profiles/*.yaml` (各プロファイルの定義)
 
 起動:
 ```bash

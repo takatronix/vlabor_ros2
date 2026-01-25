@@ -1,0 +1,10 @@
+profile:
+  name: overhead_camera
+  description: "Overhead camera (C920 via fv_camera)"
+  actions:
+    - type: include
+      package: fv_camera
+      launch: fv_camera_launch.py
+      args:
+        node_name: overhead_camera
+        config_file: ${overhead_camera_config}

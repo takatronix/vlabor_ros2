@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 from ament_index_python.packages import get_package_share_directory
@@ -22,6 +22,31 @@ def _load_config(path: str) -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
+def _load_profile_files(
+    context,
+    include_files: List[str],
+    variables: Dict[str, Any],
+) -> Dict[str, Any]:
+    profiles: Dict[str, Any] = {}
+    for path in include_files:
+        resolved = _resolve_value(context, path, variables)
+        if not isinstance(resolved, str):
+            continue
+        data = _load_config(resolved)
+        if 'profiles' in data and isinstance(data['profiles'], dict):
+            profiles.update(data['profiles'])
+            continue
+        if 'profile' in data and isinstance(data['profile'], dict):
+            entry = data['profile']
+            name = entry.get('name')
+            if name:
+                profile = dict(entry)
+                profile.pop('name', None)
+                profiles[name] = profile
+            continue
+    return profiles
+
+
 def _resolve_string(context, value: str, variables: Dict[str, Any]) -> Any:
     match = _PLACEHOLDER_SHARE_RE.match(value.strip())
     if match:
@@ -31,7 +56,7 @@ def _resolve_string(context, value: str, variables: Dict[str, Any]) -> Any:
     if match:
         key = match.group(1)
         if key in variables:
-            return variables[key]
+            return _resolve_value(context, variables[key], variables)
         return LaunchConfiguration(key).perform(context)
 
     def _replace_share(match_obj):
@@ -40,7 +65,7 @@ def _resolve_string(context, value: str, variables: Dict[str, Any]) -> Any:
     def _replace_var(match_obj):
         key = match_obj.group(1)
         if key in variables:
-            return str(variables[key])
+            return str(_resolve_value(context, variables[key], variables))
         try:
             return LaunchConfiguration(key).perform(context)
         except Exception:
@@ -138,12 +163,17 @@ def _launch_setup(context, *args, **kwargs):
     config_path = LaunchConfiguration('config').perform(context)
     profile_name = LaunchConfiguration('profile').perform(context)
     cfg = _load_config(config_path)
-    profiles = cfg.get('profiles', {})
+    variables = cfg.get('defaults', {})
+    include_files = cfg.get('include_profiles', [])
+    profiles = {}
+    if isinstance(include_files, list) and include_files:
+        profiles.update(_load_profile_files(context, include_files, variables))
+    if 'profiles' in cfg and isinstance(cfg['profiles'], dict):
+        profiles.update(cfg['profiles'])
     profile = profiles.get(profile_name)
     if not profile:
         return [LogInfo(msg=f"[unity_robot_control] profile not found: {profile_name}")]
 
-    variables = cfg.get('defaults', {})
     profile_vars = profile.get('variables', {})
     if isinstance(profile_vars, dict):
         variables = {**variables, **profile_vars}
