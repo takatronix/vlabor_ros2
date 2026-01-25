@@ -9,6 +9,10 @@
 - so101_single_teleop
 - so101_dual_teleop
 
+singleのleader/follower:
+- leader: `right_arm` (/dev/ttyACM1)
+- follower: `left_arm` (/dev/ttyACM0)
+
 ## Recorderの組み込み
 以下のprofileは `lerobot_recorder` を同時起動する:
 - so101_vr_dual_teleop (preset: so101_dual_vr)
