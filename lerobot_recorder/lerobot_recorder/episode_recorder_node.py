@@ -114,7 +114,7 @@ class EpisodeRecorderNode(Node):
 
     def _declare_parameters(self):
         """Declare ROS2 parameters."""
-        self.declare_parameter('output_dir', '~/lerobot_datasets')
+        self.declare_parameter('output_dir', '/home/ros2/ros2_ws/src/vlabor_ros2/datasets')
         self.declare_parameter('default_dataset_name', 'teleop_dataset')
         self.declare_parameter('fps', 30)
         self.declare_parameter('use_video', True)

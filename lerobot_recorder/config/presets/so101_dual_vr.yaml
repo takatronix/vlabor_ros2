@@ -2,7 +2,7 @@
 episode_recorder:
   ros__parameters:
     # Storage
-    output_dir: "~/lerobot_datasets"
+    output_dir: "/home/ros2/ros2_ws/src/vlabor_ros2/datasets"
     default_dataset_name: "so101_dual_vr"
 
     # Recording

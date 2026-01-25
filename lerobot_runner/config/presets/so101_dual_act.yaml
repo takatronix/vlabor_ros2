@@ -1,0 +1,36 @@
+# SO101 Dual Arm + ACT Preset
+policy_runner:
+  ros__parameters:
+    # Models
+    models_dir: "/home/ros2/ros2_ws/src/vlabor_ros2/models"
+    default_checkpoint: ""
+    default_policy_type: "act"
+    auto_load: false
+
+    # Device
+    device: "cuda:0"
+
+    # Timing
+    inference_rate: 10.0     # Hz - ACT can run faster
+    publish_rate: 50.0       # Hz
+    sync_slop: 0.05          # sec
+
+    # Filtering
+    lpf_enable: true
+    lpf_alpha: 0.15
+
+    # Robot
+    robot_config: "robots/so101.yaml"
+
+    # Arms
+    arm_count: 2
+    arm_0_namespace: "left_arm"
+    arm_1_namespace: "right_arm"
+
+    # Cameras
+    camera_count: 1
+    camera_0_name: "cam_front"
+    camera_0_topic: "/cam_front/image_raw"
+
+    # WebAPI
+    web_port: 8083
