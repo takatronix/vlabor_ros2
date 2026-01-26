@@ -28,8 +28,8 @@ policy_runner:
 
     # Cameras
     camera_count: 1
-    camera_0_name: "cam_front"
-    camera_0_topic: "/cam_front/image_raw"
+    camera_0_name: "overhead_camera"
+    camera_0_topic: "/overhead_camera/image_raw"
 
     # WebAPI
     web_port: 8083
