@@ -48,7 +48,7 @@ flowchart TB
     end
 
     %% Quest3 → PC
-    UnityApp -->|TCP:10000| Endpoint
+    UnityApp -->|TCP:42000| Endpoint
 
     %% テレオペフロー
     Endpoint --> VRCtrl
@@ -114,7 +114,7 @@ flowchart LR
     RS["cam_side"]
     Rec["recorder"]
 
-    Quest3 -->|TCP:10000| TCP
+    Quest3 -->|TCP:42000| TCP
     TCP --> VR
     VR --> IKL --> Leader
     VR --> IKR --> Follower
@@ -362,7 +362,7 @@ flowchart LR
 
 | カテゴリ | ノード名 | パッケージ | 日本語名 | 何をするか |
 |---------|---------|-----------|---------|-----------|
-| **通信** | ros_tcp_endpoint | ros_tcp_endpoint | TCP通信 | Quest 3/Unity と ROS2 を TCP:10000 で接続 |
+| **通信** | ros_tcp_endpoint | ros_tcp_endpoint | TCP通信 | Quest 3/Unity と ROS2 を TCP:42000 で接続 |
 | **制御** | vr_control | vr_control | VR制御 | VRの手の位置・姿勢をロボット座標に変換 |
 | **制御** | ik_solver_left | arm_ik_solver | 左IK | 左アームの逆運動学（手先位置→関節角度） |
 | **制御** | ik_solver_right | arm_ik_solver | 右IK | 右アームの逆運動学（手先位置→関節角度） |
@@ -379,7 +379,7 @@ flowchart LR
 
 | ノード名 | 入力 | 出力 | 説明 |
 |---------|------|------|------|
-| **ros_tcp_endpoint** | TCP:10000 (Unity) | ROS2トピック | Unity（Quest 3含む）とROS2の双方向通信を担当 |
+| **ros_tcp_endpoint** | TCP:42000 (Unity) | ROS2トピック | Unity（Quest 3含む）とROS2の双方向通信を担当 |
 
 #### 制御ノード
 

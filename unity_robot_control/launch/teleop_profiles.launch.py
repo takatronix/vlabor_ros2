@@ -114,6 +114,9 @@ def _build_launch_arguments(
     for key, val in resolved.items():
         if key in omit_empty and (val is None or str(val).strip() == ''):
             continue
+        if isinstance(val, (bool, int, float)):
+            # Launch arguments expect strings or substitutions, not raw scalars.
+            val = str(val).lower() if isinstance(val, bool) else str(val)
         launch_args[key] = val
     return launch_args
 
@@ -211,7 +214,7 @@ def generate_launch_description():
             description='Profile name from launch_profiles.yaml',
         ),
         DeclareLaunchArgument('ros_ip', default_value='0.0.0.0'),
-        DeclareLaunchArgument('ros_tcp_port', default_value='10000'),
+        DeclareLaunchArgument('ros_tcp_port', default_value='42000'),
         DeclareLaunchArgument('auto_detect_ip', default_value='true'),
         DeclareLaunchArgument('left_serial_port', default_value='/dev/ttyACM0'),
         DeclareLaunchArgument('right_serial_port', default_value='/dev/ttyACM1'),

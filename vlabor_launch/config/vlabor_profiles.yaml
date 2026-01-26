@@ -1,6 +1,6 @@
 defaults:
   ros_ip: "0.0.0.0"
-  ros_tcp_port: 10000
+  ros_tcp_port: 42000
   auto_detect_ip: true
   left_serial_port: "/dev/ttyACM0"
   right_serial_port: "/dev/ttyACM1"

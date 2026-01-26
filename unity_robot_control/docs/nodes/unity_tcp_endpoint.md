@@ -12,7 +12,7 @@ Unity側からのTCP通信(ros_tcp_endpoint)を起動・監視するラッパー
 
 ## パラメータ
 - `ros_ip` (string, default: `0.0.0.0`)
-- `ros_tcp_port` (int, default: `10000`)
+- `ros_tcp_port` (int, default: `42000`)
 - `auto_detect_ip` (bool, default: `true`)
 
 ## 起動例

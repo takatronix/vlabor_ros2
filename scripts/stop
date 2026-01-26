@@ -108,6 +108,7 @@ NODES=(
     "joint_state_mirror_single"
     "joint_state_mirror_dual"
     "joint_state_mirror_node"
+    "rviz2"
     "rqt_gui_cpp_node"
 )
 

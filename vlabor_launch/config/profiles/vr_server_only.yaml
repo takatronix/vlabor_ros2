@@ -5,7 +5,7 @@ profile:
     - type: node
       package: ros_tcp_endpoint
       executable: default_server_endpoint
-      name: unity_tcp_endpoint
+      name: ros_tcp_endpoint
       parameters:
         ROS_IP: ${ros_ip}
         ROS_TCP_PORT: ${ros_tcp_port}

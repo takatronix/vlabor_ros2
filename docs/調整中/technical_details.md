@@ -21,7 +21,7 @@ sequenceDiagram
 
     Unity->>Unity: Hand Tracking取得
     Unity->>Unity: PoseStamped作成
-    Unity->>TCP: TCP送信 (Port 10000)
+    Unity->>TCP: TCP送信 (Port 42000)
 
     TCP->>Endpoint: TCP受信
     Endpoint->>Endpoint: デシリアライズ
@@ -47,13 +47,13 @@ sequenceDiagram
 **役割:** UnityからのTCP通信を受信し、ROS2トピックに変換
 
 ```
-Unity (TCP Client) ──TCP:10000──> ros_tcp_endpoint ──> ROS2 Topics
+Unity (TCP Client) ──TCP:42000──> ros_tcp_endpoint ──> ROS2 Topics
 ```
 
 **設定:**
 ```bash
 ros2 run ros_tcp_endpoint default_server_endpoint \
-    --ros-args -p ROS_IP:=192.168.1.100 -p ROS_TCP_PORT:=10000
+    --ros-args -p ROS_IP:=192.168.1.100 -p ROS_TCP_PORT:=42000
 ```
 
 **出力トピック:**
@@ -421,7 +421,7 @@ flowchart TB
         RightArm["右アーム"]
     end
 
-    Unity -->|TCP:10000| Endpoint
+    Unity -->|TCP:42000| Endpoint
     Endpoint --> VRCtrl
     VRCtrl --> IKL
     VRCtrl --> IKR

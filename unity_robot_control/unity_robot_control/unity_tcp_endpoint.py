@@ -20,7 +20,7 @@ class UnityTcpEndpointNode(Node):
 
         # パラメータ宣言
         self.declare_parameter('ros_ip', '0.0.0.0')
-        self.declare_parameter('ros_tcp_port', 10000)
+        self.declare_parameter('ros_tcp_port', 42000)
         self.declare_parameter('auto_detect_ip', True)
 
         # IPアドレス取得
@@ -74,7 +74,7 @@ class UnityTcpEndpointNode(Node):
                 capture_output=True,
                 text=True
             )
-            # ポート10000への接続を確認
+            # ポート42000への接続を確認
             connections = []
             for line in result.stdout.split('\n'):
                 if f':{self.ros_tcp_port}' in line and 'ESTAB' in line:

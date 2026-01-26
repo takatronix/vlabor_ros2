@@ -19,19 +19,22 @@ from sensor_msgs.msg import JointState
 import PyKDL
 import os
 import subprocess
-import tempfile
 import time
 import numpy as np
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
 from tf2_geometry_msgs import do_transform_pose_stamped
 
-# urdfpyでURDFパース（kdl_parser_pyの代替）
+# urdfpy は numpy/scipy 互換で落ちる環境があるため無効化
+HAS_URDFPY = False
+
+# urdf_parser_py + local kdl_parser_py フォールバック
 try:
-    from urdfpy import URDF
-    HAS_URDFPY = True
-except ImportError:
-    HAS_URDFPY = False
+    from urdf_parser_py.urdf import URDF as URDFParser
+    from .kdl_parser_py.urdf import treeFromUrdfModel
+    HAS_URDF_PARSER = True
+except Exception:
+    HAS_URDF_PARSER = False
 
 
 class IKSolverNode(Node):
@@ -189,15 +192,8 @@ class IKSolverNode(Node):
     # =========================================================================
 
     def _init_kdl(self, urdf_file):
-        """KDLの初期化（urdfpyでパース）"""
+        """KDLの初期化（urdfpy or urdf_parser_py）"""
         try:
-            # urdfpy が numpy の deprecated alias を使うため互換性を付与
-            import numpy as np
-            if not hasattr(np, 'float'):
-                np.float = float
-            if not hasattr(np, 'int'):
-                np.int = int
-
             # xacroの場合は処理
             if urdf_file.endswith('.xacro'):
                 urdf_content = self._process_xacro(urdf_file)
@@ -211,24 +207,48 @@ class IKSolverNode(Node):
             # package:// URI を実パスに置換
             urdf_content = self._resolve_package_uris(urdf_content)
 
-            if not HAS_URDFPY:
-                self.get_logger().error('urdfpy not installed. pip install urdfpy')
+            robot = None
+            use_urdfpy = False
+
+            if robot is None and HAS_URDF_PARSER:
+                try:
+                    robot = URDFParser.from_xml_string(urdf_content)
+                except Exception as exc:
+                    self.get_logger().error(f'urdf_parser_py failed: {exc}')
+                    return
+
+            if robot is None:
+                self.get_logger().error('No URDF parser available (urdfpy/urdf_parser_py)')
                 return
 
-            # 一時ファイルに書き出してパース
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.urdf', delete=False) as tmp:
-                tmp.write(urdf_content)
-                tmp_path = tmp.name
-
-            try:
-                robot = URDF.load(tmp_path)
-            finally:
-                os.unlink(tmp_path)
-
             # URDFからKDLチェーンを構築
-            self.chain, self.joint_limits = self._build_kdl_chain(robot)
-            if self.chain is None:
+            if use_urdfpy:
+                self.chain, self.joint_limits = self._build_kdl_chain(robot)
+            else:
+                ok, tree = treeFromUrdfModel(robot)
+                if not ok:
+                    self.get_logger().error('Failed to build KDL tree from URDF')
+                    self._log_urdf_links(robot)
+                    return
+                self.get_logger().info(
+                    f'KDL tree built: segments={tree.getNrOfSegments()} joints={tree.getNrOfJoints()}'
+                )
+                self.chain = tree.getChain(self.base_link, self.ee_link)
+                self.get_logger().info(
+                    f'KDL chain: base={self.base_link} ee={self.ee_link} '
+                    f'segments={self.chain.getNrOfSegments()} joints={self.chain.getNrOfJoints()}'
+                )
+                self.joint_limits = {}
+                for joint in robot.joints:
+                    if joint.limit is None:
+                        continue
+                    if joint.type not in ('revolute', 'continuous'):
+                        continue
+                    self.joint_limits[joint.name] = (joint.limit.lower, joint.limit.upper)
+
+            if self.chain is None or self.chain.getNrOfJoints() == 0:
                 self.get_logger().error('Failed to build KDL chain')
+                self._log_urdf_links(robot)
                 return
 
             self.ik_joint_count = self.chain.getNrOfJoints()
@@ -259,6 +279,24 @@ class IKSolverNode(Node):
             self.get_logger().error(f'KDL initialization failed: {e}')
             import traceback
             self.get_logger().error(traceback.format_exc())
+
+    def _log_urdf_links(self, robot):
+        """URDFのリンク情報をログ出力（デバッグ用）"""
+        try:
+            link_names = [link.name for link in robot.links]
+        except Exception:
+            link_names = []
+        try:
+            root = robot.get_root()
+        except Exception:
+            root = None
+
+        self.get_logger().error(
+            f'URDF links: count={len(link_names)} root={root} '
+            f'base_link={self.base_link} ee_link={self.ee_link}'
+        )
+        if link_names:
+            self.get_logger().error(f'URDF link list: {", ".join(link_names)}')
 
     def _process_xacro(self, xacro_file):
         """xacroファイルをURDFに変換"""

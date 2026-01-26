@@ -23,7 +23,7 @@ def generate_launch_description():
     )
     ros_tcp_port_arg = DeclareLaunchArgument(
         'ros_tcp_port',
-        default_value='10000',
+        default_value='42000',
         description='ROS TCP Endpoint port'
     )
     auto_detect_ip_arg = DeclareLaunchArgument(

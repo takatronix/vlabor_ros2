@@ -23,7 +23,7 @@ def generate_launch_description():
     )
     ros_tcp_port_arg = DeclareLaunchArgument(
         'ros_tcp_port',
-        default_value='10000',
+        default_value='42000',
         description='ROS TCP Endpoint port'
     )
     auto_detect_ip_arg = DeclareLaunchArgument(
@@ -75,7 +75,7 @@ def generate_launch_description():
     unity_tcp_endpoint = Node(
         package='ros_tcp_endpoint',
         executable='default_server_endpoint',
-        name='unity_tcp_endpoint',
+        name='ros_tcp_endpoint',
         parameters=[{
             'ROS_IP': LaunchConfiguration('ros_ip'),
             'ROS_TCP_PORT': LaunchConfiguration('ros_tcp_port'),

@@ -6,16 +6,12 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /RobotModel1
-        - /RobotModel2
       Splitter Ratio: 0.5
-    Tree Height: 751
+    Tree Height: 101
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
-    Expanded:
-      - /2D Goal Pose1
-      - /Publish Point1
+    Expanded: ~
     Name: Tool Properties
     Splitter Ratio: 0.5886790156364441
   - Class: rviz_common/Views
@@ -32,7 +28,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 0.1
+      Cell Size: 0.10000000149011612
       Class: rviz_default_plugins/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -67,6 +63,45 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gripper_frame_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        gripper_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lower_arm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        moving_jaw_so101_v1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        shoulder_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        upper_arm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wrist_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
@@ -93,6 +128,45 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gripper_frame_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        gripper_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lower_arm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        moving_jaw_so101_v1_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        shoulder_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        upper_arm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wrist_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
@@ -106,11 +180,73 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-      Marker Scale: 0.1
+        base_link:
+          Value: true
+        camera_link:
+          Value: true
+        camera_optical_frame:
+          Value: true
+        left_arm/base_link:
+          Value: true
+        left_arm/gripper_frame_link:
+          Value: true
+        left_arm/gripper_link:
+          Value: true
+        left_arm/lower_arm_link:
+          Value: true
+        left_arm/moving_jaw_so101_v1_link:
+          Value: true
+        left_arm/shoulder_link:
+          Value: true
+        left_arm/upper_arm_link:
+          Value: true
+        left_arm/wrist_link:
+          Value: true
+        right_arm/base_link:
+          Value: true
+        right_arm/gripper_frame_link:
+          Value: true
+        right_arm/gripper_link:
+          Value: true
+        right_arm/lower_arm_link:
+          Value: true
+        right_arm/moving_jaw_so101_v1_link:
+          Value: true
+        right_arm/shoulder_link:
+          Value: true
+        right_arm/upper_arm_link:
+          Value: true
+        right_arm/wrist_link:
+          Value: true
+        world:
+          Value: true
+      Marker Scale: 0.10000000149011612
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: false
+      Tree:
+        world:
+          left_arm/base_link:
+            left_arm/shoulder_link:
+              left_arm/upper_arm_link:
+                left_arm/lower_arm_link:
+                  left_arm/wrist_link:
+                    left_arm/gripper_link:
+                      left_arm/gripper_frame_link:
+                        {}
+                      left_arm/moving_jaw_so101_v1_link:
+                        {}
+          right_arm/base_link:
+            right_arm/shoulder_link:
+              right_arm/upper_arm_link:
+                right_arm/lower_arm_link:
+                  right_arm/wrist_link:
+                    right_arm/gripper_link:
+                      right_arm/gripper_frame_link:
+                        {}
+                      right_arm/moving_jaw_so101_v1_link:
+                        {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -134,32 +270,41 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.8
+      Distance: 0.6730419993400574
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.1
-        Y: 0.0
-        Z: 0.15
+        X: 0.10000000149011612
+        Y: 0
+        Z: 0.15000000596046448
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5
+      Pitch: 0.6449999809265137
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.8
+      Yaw: 0.535000205039978
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1136
+  Height: 946
   Hide Left Dock: false
   Hide Right Dock: true
-  Width: 1842
-  X: 100
-  Y: 100
+  QMainWindow State: 000000ff00000000fd0000000100000000000002530000035cfc0200000005fb000000100044006900730070006c006100790073010000003b0000012a000000c700fffffffb0000001200530065006c0065006300740069006f006e010000016b000000920000005c00fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000203000000920000005c00fffffffb0000000a00560069006500770073010000029b000000bf000000a000fffffffb0000000800540069006d00650100000360000000370000003700ffffff000004e10000035c00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Time:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 1850
+  X: 70
+  Y: 27
