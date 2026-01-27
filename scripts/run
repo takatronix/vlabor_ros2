@@ -105,39 +105,56 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# 表示用ホスト名（vlabor.local）と、外部から見たIPを取得
+HOST_NAME="vlabor.local"
+# IPv4 のみ取得（IPv6を出さない）
+get_external_ip() {
+    local ip
+    ip=$(getent ahostsv4 vlabor.local 2>/dev/null | awk '{print $1; exit}')
+    if [ -z "$ip" ]; then
+        ip=$(ip -4 route get 1 2>/dev/null | awk '{print $7; exit}')
+    fi
+    if [ -z "$ip" ]; then
+        ip=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v ':' | head -1)
+    fi
+    echo "$ip"
+}
+
 open_browser() {
     local urls=()
     case "$PROFILE" in
         so101_vr_dual_teleop|so101_dual_teleop)
-            urls=("http://localhost:8888" "http://localhost:8080" "http://localhost:8081") ;;
+            urls=("http://${HOST_NAME}:8888" "http://${HOST_NAME}:8080" "http://${HOST_NAME}:8081") ;;
         so101_single_teleop)
-            urls=("http://localhost:8888" "http://localhost:8080") ;;
+            urls=("http://${HOST_NAME}:8888" "http://${HOST_NAME}:8080") ;;
         overhead_camera)
-            urls=("http://localhost:8888") ;;
+            urls=("http://${HOST_NAME}:8888") ;;
         *)  return ;;
     esac
 
     sleep 3
 
-    local opened=false
     for url in "${urls[@]}"; do
         if ssh -o ConnectTimeout=2 -o BatchMode=yes mac "open '$url'" 2>/dev/null; then
             echo -e "${GREEN}🌐 Opened: $url${NC}"
-            opened=true
         fi
     done
 
-    if [ "$opened" = false ]; then
-        echo ""
-        echo -e "${CYAN}========================================${NC}"
-        echo -e "${CYAN}  Web UI URLs${NC}"
-        echo -e "${CYAN}========================================${NC}"
-        for url in "${urls[@]}"; do
-            echo -e "  ${GREEN}$url${NC}"
-        done
-        echo -e "${CYAN}========================================${NC}"
-        echo ""
+    local ext_ip
+    ext_ip=$(get_external_ip)
+    echo ""
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "${CYAN}  Web UI URLs (${HOST_NAME})${NC}"
+    echo -e "${CYAN}========================================${NC}"
+    for url in "${urls[@]}"; do
+        echo -e "  ${GREEN}$url${NC}"
+    done
+    if [ -n "$ext_ip" ]; then
+        echo -e "  外部からアクセス: ${GREEN}http://${ext_ip}:8888${NC} など (同じポート)"
+        echo -e "  vlaborアプリからは、IPアドレス ${GREEN}${ext_ip}${NC} ポートは ${GREEN}42000${NC} で接続してください"
     fi
+    echo -e "${CYAN}========================================${NC}"
+    echo ""
 }
 
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
