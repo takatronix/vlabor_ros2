@@ -70,6 +70,16 @@ profile:
       parameters:
         web_port: ${left_webui_port}
         arm_namespaces: [left_arm]
+    - type: node
+      package: vlabor_dashboard
+      executable: vlabor_dashboard_node
+      name: vlabor_dashboard
+      parameters:
+        web_port: ${dashboard_port}
+        profile: so101_single_teleop
+        arm_namespaces: [left_arm]
+        camera_topics: [/overhead_camera/image_raw]
+        camera_names: [overhead_camera]
     - type: include
       package: foxglove_bridge
       launch: foxglove_bridge_launch.xml

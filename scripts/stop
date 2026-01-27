@@ -108,6 +108,8 @@ NODES=(
     "joint_state_mirror_single"
     "joint_state_mirror_dual"
     "joint_state_mirror_node"
+    "vlabor_dashboard"
+    "vlabor_dashboard_node"
     "rviz2"
     "rqt_gui_cpp_node"
 )

@@ -11,6 +11,7 @@ defaults:
   gripper_scale: 2.0
   left_webui_port: 8080
   right_webui_port: 8081
+  dashboard_port: 8888
   enable_foxglove: true
   enable_bridge: true
   so101_urdf_path: "${share:so101_description}/urdf/so101_new_calib.urdf.xacro"

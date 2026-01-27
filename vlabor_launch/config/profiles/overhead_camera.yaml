@@ -8,3 +8,13 @@ profile:
       args:
         node_name: overhead_camera
         config_file: ${overhead_camera_config}
+    - type: node
+      package: vlabor_dashboard
+      executable: vlabor_dashboard_node
+      name: vlabor_dashboard
+      parameters:
+        web_port: ${dashboard_port}
+        profile: overhead_camera
+        arm_namespaces: []
+        camera_topics: [/overhead_camera/image_raw]
+        camera_names: [overhead_camera]

@@ -237,5 +237,6 @@ def generate_launch_description():
         DeclareLaunchArgument('gazebo_args', default_value=''),
         DeclareLaunchArgument('mirror_single_config', default_value=''),
         DeclareLaunchArgument('mirror_dual_config', default_value=''),
+        DeclareLaunchArgument('dashboard_port', default_value='8888'),
         OpaqueFunction(function=_launch_setup),
     ])

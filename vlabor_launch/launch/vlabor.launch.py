@@ -51,6 +51,7 @@ def generate_launch_description():
             'overhead_camera_config': LaunchConfiguration('overhead_camera_config'),
             'mirror_single_config': LaunchConfiguration('mirror_single_config'),
             'mirror_dual_config': LaunchConfiguration('mirror_dual_config'),
+            'dashboard_port': LaunchConfiguration('dashboard_port'),
         }.items(),
     )
 
@@ -90,5 +91,6 @@ def generate_launch_description():
         DeclareLaunchArgument('overhead_camera_config', default_value=''),
         DeclareLaunchArgument('mirror_single_config', default_value=''),
         DeclareLaunchArgument('mirror_dual_config', default_value=''),
+        DeclareLaunchArgument('dashboard_port', default_value=''),
         include_profiles,
     ])

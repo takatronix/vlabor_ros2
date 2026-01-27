@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLABOR Dashboard</title>
+<style>
+:root {
+  --bg-primary: #0f0f1a;
+  --bg-secondary: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-card-hover: #1a2742;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b0;
+  --text-muted: #606070;
+  --accent: #00d9ff;
+  --accent-dim: #00a0c0;
+  --green: #00e676;
+  --red: #ff5252;
+  --orange: #ffa726;
+  --yellow: #ffee58;
+  --purple: #bb86fc;
+  --border: #2a2a40;
+  --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header h1 { font-size: 18px; font-weight: 600; color: var(--accent); }
+.profile-badge {
+  background: var(--bg-card);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.ws-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+}
+.ws-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red);
+  transition: background 0.3s;
+}
+.ws-dot.connected { background: var(--green); }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  user-select: none;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tab.hidden { display: none; }
+
+/* Content */
+.content { padding: 20px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Arms Grid */
+.arms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 16px;
+}
+.arm-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.arm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(0,217,255,0.05);
+  border-bottom: 1px solid var(--border);
+}
+.arm-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.arm-controls { display: flex; gap: 8px; }
+.ctrl-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ctrl-btn.on { background: var(--green); color: #000; border-color: var(--green); }
+.ctrl-btn.off { background: var(--red); color: #fff; border-color: var(--red); }
+
+.arm-body { padding: 12px 16px; }
+
+/* Joint Table */
+.joint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.joint-table th {
+  text-align: left;
+  padding: 4px 8px;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+}
+.joint-table td {
+  padding: 4px 8px;
+  font-family: 'Consolas', 'SF Mono', monospace;
+  border-bottom: 1px solid rgba(42,42,64,0.5);
+}
+.joint-table tr:hover td { background: rgba(0,217,255,0.03); }
+.val-pos { color: var(--accent); }
+.val-neg { color: var(--orange); }
+
+/* Servo Detail */
+.servo-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.servo-section h4 {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.servo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 6px;
+}
+.servo-item {
+  background: var(--bg-secondary);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.servo-item .label { color: var(--text-muted); }
+.servo-item .value {
+  font-family: 'Consolas', monospace;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+/* Stream Status */
+.stream-row {
+  display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap;
+}
+.stream-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+}
+.stream-badge.ok { color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+.stream-badge.stale { color: var(--orange); border: 1px solid rgba(255,167,38,0.3); }
+.stream-badge.dead { color: var(--red); border: 1px solid rgba(255,82,82,0.3); }
+
+/* Camera */
+.cameras-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+.camera-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.camera-header {
+  padding: 10px 16px;
+  background: rgba(0,217,255,0.05);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.camera-body {
+  position: relative;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+}
+.camera-body img {
+  width: 100%;
+  display: block;
+}
+.no-signal {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.camera-footer {
+  padding: 6px 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Recorder */
+.recorder-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  max-width: 600px;
+}
+.recorder-header {
+  padding: 12px 16px;
+  background: rgba(187,134,252,0.05);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.recorder-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--purple);
+}
+.recorder-state {
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.recorder-state.idle { background: var(--bg-secondary); color: var(--text-muted); }
+.recorder-state.recording { background: rgba(255,82,82,0.2); color: var(--red); }
+.recorder-state.paused { background: rgba(255,167,38,0.2); color: var(--orange); }
+
+.recorder-body { padding: 16px; }
+.recorder-form { display: flex; flex-direction: column; gap: 12px; }
+.form-row { display: flex; gap: 12px; align-items: center; }
+.form-row label {
+  width: 80px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.form-row input {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.form-row input:focus { outline: none; border-color: var(--accent); }
+
+.recorder-buttons {
+  display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;
+}
+.rec-btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.rec-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.rec-btn.start { background: var(--green); color: #000; }
+.rec-btn.stop { background: var(--red); color: #fff; }
+.rec-btn.pause { background: var(--orange); color: #000; }
+.rec-btn.resume { background: var(--accent); color: #000; }
+.rec-btn.cancel { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
+.rec-btn:hover:not(:disabled) { filter: brightness(1.1); }
+
+.recorder-stats {
+  display: flex; gap: 20px; margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.stat-item { text-align: center; }
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  font-family: 'Consolas', monospace;
+  color: var(--text-primary);
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.recorder-unavailable {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* IK Panel */
+.ik-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.ik-section h4 {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.ik-pose {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  font-size: 12px;
+  font-family: 'Consolas', monospace;
+}
+.ik-pose span { color: var(--text-muted); }
+.ik-pose .val { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>VLABOR Dashboard</h1>
+    <span class="profile-badge" id="profileBadge">--</span>
+  </div>
+  <div class="ws-status">
+    <div class="ws-dot" id="wsDot"></div>
+    <span id="wsLabel">Disconnected</span>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs" id="tabBar">
+  <div class="tab active" data-tab="arms" id="tabArms">Arms</div>
+  <div class="tab" data-tab="camera" id="tabCamera">Camera</div>
+  <div class="tab" data-tab="recorder" id="tabRecorder">Recorder</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- Arms Tab -->
+  <div class="tab-panel active" id="panelArms">
+    <div class="arms-grid" id="armsGrid"></div>
+  </div>
+
+  <!-- Camera Tab -->
+  <div class="tab-panel" id="panelCamera">
+    <div class="cameras-grid" id="camerasGrid"></div>
+  </div>
+
+  <!-- Recorder Tab -->
+  <div class="tab-panel" id="panelRecorder">
+    <div class="recorder-panel" id="recorderPanel">
+      <div class="recorder-header">
+        <h3>LeRobot Recorder</h3>
+        <span class="recorder-state idle" id="recState">idle</span>
+      </div>
+      <div class="recorder-body">
+        <div class="recorder-form">
+          <div class="form-row">
+            <label>Task</label>
+            <input type="text" id="recTask" placeholder="pick_place" value="">
+          </div>
+          <div class="form-row">
+            <label>Dataset</label>
+            <input type="text" id="recDataset" placeholder="lerobot/so101_dataset" value="">
+          </div>
+        </div>
+        <div class="recorder-buttons">
+          <button class="rec-btn start" id="btnRecStart" onclick="recorderCmd('start')">Start</button>
+          <button class="rec-btn pause" id="btnRecPause" onclick="recorderCmd('pause')" disabled>Pause</button>
+          <button class="rec-btn resume" id="btnRecResume" onclick="recorderCmd('resume')" disabled>Resume</button>
+          <button class="rec-btn stop" id="btnRecStop" onclick="recorderCmd('stop')" disabled>Stop</button>
+          <button class="rec-btn cancel" id="btnRecCancel" onclick="recorderCmd('cancel')" disabled>Cancel</button>
+        </div>
+        <div class="recorder-stats">
+          <div class="stat-item">
+            <div class="stat-value" id="recEpisode">--</div>
+            <div class="stat-label">Episode</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="recFrames">--</div>
+            <div class="stat-label">Frames</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="recDuration">--</div>
+            <div class="stat-label">Duration</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="recDatasetTotal">--</div>
+            <div class="stat-label">Total Episodes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===========================================================================
+// State
+// ===========================================================================
+let ws = null;
+let profile = '';
+let armNames = [];
+let cameraNames = [];
+let reconnectTimer = null;
+
+// ===========================================================================
+// WebSocket
+// ===========================================================================
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${proto}//${location.host}/ws`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    document.getElementById('wsDot').classList.add('connected');
+    document.getElementById('wsLabel').textContent = 'Connected';
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  };
+
+  ws.onclose = () => {
+    document.getElementById('wsDot').classList.remove('connected');
+    document.getElementById('wsLabel').textContent = 'Disconnected';
+    ws = null;
+    reconnectTimer = setTimeout(connect, 2000);
+  };
+
+  ws.onerror = () => {};
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      handleMessage(msg);
+    } catch {}
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(obj));
+  }
+}
+
+// ===========================================================================
+// Message Handler
+// ===========================================================================
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'init':
+      profile = msg.profile || '';
+      armNames = msg.arms || [];
+      cameraNames = msg.cameras || [];
+      document.getElementById('profileBadge').textContent = profile || 'default';
+      applyProfileLayout();
+      buildArmCards();
+      buildCameraCards();
+      // update initial arm data
+      if (msg.data) {
+        for (const [arm, data] of Object.entries(msg.data)) {
+          updateArmPanel(arm, data);
+        }
+      }
+      if (msg.recorder_status) {
+        updateRecorderPanel(msg.recorder_status);
+      }
+      break;
+
+    case 'arm_update':
+      updateArmPanel(msg.arm, msg.data);
+      break;
+
+    case 'camera_frame':
+      updateCameraFrame(msg.camera, msg.data, msg.width, msg.height);
+      break;
+
+    case 'recorder_status':
+      updateRecorderPanel(msg.data);
+      break;
+
+    case 'torque_response':
+    case 'ik_response':
+      // handled via arm_update
+      break;
+
+    case 'recorder_start_response':
+    case 'recorder_stop_response':
+    case 'recorder_pause_response':
+    case 'recorder_resume_response':
+    case 'recorder_cancel_response':
+      // status will update via polling
+      break;
+
+    case 'error':
+      console.warn('Dashboard error:', msg.message);
+      break;
+  }
+}
+
+// ===========================================================================
+// Profile Layout
+// ===========================================================================
+function applyProfileLayout() {
+  const tabArms = document.getElementById('tabArms');
+  const tabCamera = document.getElementById('tabCamera');
+  const tabRecorder = document.getElementById('tabRecorder');
+
+  // show/hide tabs based on profile
+  tabArms.classList.toggle('hidden', armNames.length === 0);
+  tabCamera.classList.toggle('hidden', cameraNames.length === 0);
+
+  // profiles without recorder
+  const noRecorder = ['overhead_camera', 'vr_server_only', 'rviz_so101', 'gazebo_so101'];
+  tabRecorder.classList.toggle('hidden', noRecorder.includes(profile));
+
+  // select first visible tab
+  const tabs = document.querySelectorAll('.tab:not(.hidden)');
+  if (tabs.length > 0) {
+    const activeTab = document.querySelector('.tab.active');
+    if (!activeTab || activeTab.classList.contains('hidden')) {
+      switchTab(tabs[0].dataset.tab);
+    }
+  }
+}
+
+// ===========================================================================
+// Tabs
+// ===========================================================================
+document.getElementById('tabBar').addEventListener('click', (e) => {
+  if (e.target.classList.contains('tab') && !e.target.classList.contains('hidden')) {
+    switchTab(e.target.dataset.tab);
+  }
+});
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel' + capitalize(name)));
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ===========================================================================
+// Arm Cards
+// ===========================================================================
+function buildArmCards() {
+  const grid = document.getElementById('armsGrid');
+  grid.innerHTML = '';
+  for (const arm of armNames) {
+    const card = document.createElement('div');
+    card.className = 'arm-card';
+    card.id = `arm-${arm}`;
+    card.innerHTML = `
+      <div class="arm-header">
+        <span class="arm-title">${arm}</span>
+        <div class="arm-controls">
+          <button class="ctrl-btn" id="btn-torque-${arm}" onclick="toggleTorque('${arm}')">Torque OFF</button>
+          <button class="ctrl-btn" id="btn-ik-${arm}" onclick="toggleIK('${arm}')">IK OFF</button>
+        </div>
+      </div>
+      <div class="arm-body">
+        <table class="joint-table">
+          <thead><tr><th>Joint</th><th>Angle (deg)</th><th>Rad</th><th>Velocity</th></tr></thead>
+          <tbody id="joints-${arm}"></tbody>
+        </table>
+        <div class="servo-section" id="servo-${arm}">
+          <h4>Servo Detail</h4>
+          <div class="servo-grid" id="servo-grid-${arm}">
+            <span style="color:var(--text-muted);font-size:12px;">Waiting for data...</span>
+          </div>
+        </div>
+        <div class="ik-section" id="ik-section-${arm}" style="display:none;">
+          <h4>IK Target Pose</h4>
+          <div class="ik-pose" id="ik-pose-${arm}"></div>
+        </div>
+        <div class="stream-row" id="stream-${arm}"></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function updateArmPanel(arm, data) {
+  if (!data) return;
+
+  // Torque button
+  const torqueBtn = document.getElementById(`btn-torque-${arm}`);
+  if (torqueBtn) {
+    const en = data.enabled;
+    torqueBtn.textContent = en ? 'Torque ON' : 'Torque OFF';
+    torqueBtn.className = 'ctrl-btn ' + (en ? 'on' : 'off');
+  }
+
+  // IK button
+  const ikBtn = document.getElementById(`btn-ik-${arm}`);
+  if (ikBtn) {
+    const en = data.ik_enabled;
+    ikBtn.textContent = en ? 'IK ON' : 'IK OFF';
+    ikBtn.className = 'ctrl-btn ' + (en ? 'on' : '');
+  }
+
+  // Joint table - prefer feedback, fallback to joint_states
+  const jointData = data.joint_feedback || data.joint_states;
+  const tbody = document.getElementById(`joints-${arm}`);
+  if (tbody && jointData && jointData.joints) {
+    let html = '';
+    for (const [name, j] of Object.entries(jointData.joints)) {
+      const deg = j.position_deg;
+      const cls = deg >= 0 ? 'val-pos' : 'val-neg';
+      html += `<tr>
+        <td>${name}</td>
+        <td class="${cls}">${deg.toFixed(1)}</td>
+        <td>${j.position_rad.toFixed(3)}</td>
+        <td>${j.velocity.toFixed(2)}</td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+  }
+
+  // Servo detail
+  const servoGrid = document.getElementById(`servo-grid-${arm}`);
+  if (servoGrid && data.servo_detail) {
+    const d = data.servo_detail;
+    let html = '';
+    const names = d.joint_names || [];
+    const ticks = d.ticks || [];
+    const temps = d.temperatures || [];
+    const voltages = d.voltages || [];
+    const currents = d.currents || [];
+    const loads = d.loads || [];
+
+    for (let i = 0; i < names.length; i++) {
+      const items = [];
+      if (i < ticks.length) items.push(`Tick: ${ticks[i]}`);
+      if (i < temps.length) items.push(`${temps[i]}\u00B0C`);
+      if (i < currents.length) items.push(`${currents[i]}mA`);
+      if (i < loads.length) items.push(`Load: ${loads[i]}`);
+      if (i < voltages.length) items.push(`${(voltages[i] / 10).toFixed(1)}V`);
+
+      html += `<div class="servo-item">
+        <div class="label">${names[i]}</div>
+        <div class="value">${items.join(' | ')}</div>
+      </div>`;
+    }
+    if (d.errors && d.errors.length > 0) {
+      html += `<div class="servo-item" style="grid-column:1/-1;color:var(--red);">
+        Errors: ${d.errors.join(', ')}
+      </div>`;
+    }
+    servoGrid.innerHTML = html || '<span style="color:var(--text-muted);font-size:12px;">No servo data</span>';
+  }
+
+  // IK target pose
+  const ikSection = document.getElementById(`ik-section-${arm}`);
+  const ikPose = document.getElementById(`ik-pose-${arm}`);
+  if (ikSection && ikPose) {
+    if (data.ik_target_pose) {
+      ikSection.style.display = '';
+      const p = data.ik_target_pose.position;
+      const o = data.ik_target_pose.orientation;
+      ikPose.innerHTML = `
+        <div><span>X:</span> <span class="val">${p.x.toFixed(3)}</span></div>
+        <div><span>Y:</span> <span class="val">${p.y.toFixed(3)}</span></div>
+        <div><span>Z:</span> <span class="val">${p.z.toFixed(3)}</span></div>
+        <div><span>qX:</span> <span class="val">${o.x.toFixed(3)}</span></div>
+        <div><span>qY:</span> <span class="val">${o.y.toFixed(3)}</span></div>
+        <div><span>qZ:</span> <span class="val">${o.z.toFixed(3)}</span></div>
+      `;
+    } else {
+      ikSection.style.display = 'none';
+    }
+  }
+
+  // Stream status
+  const streamRow = document.getElementById(`stream-${arm}`);
+  if (streamRow && data.stream_status) {
+    let html = '';
+    for (const [key, st] of Object.entries(data.stream_status)) {
+      if (!st) {
+        html += `<span class="stream-badge dead">${key}: --</span>`;
+      } else {
+        const cls = st.age_sec < 1 ? 'ok' : st.age_sec < 5 ? 'stale' : 'dead';
+        const rate = st.rate_hz ? `${st.rate_hz}Hz` : '--';
+        html += `<span class="stream-badge ${cls}">${key}: ${rate}</span>`;
+      }
+    }
+    streamRow.innerHTML = html;
+  }
+}
+
+function toggleTorque(arm) {
+  const btn = document.getElementById(`btn-torque-${arm}`);
+  const current = btn.classList.contains('on');
+  send({ type: 'set_torque', arm: arm, enabled: !current });
+}
+
+function toggleIK(arm) {
+  const btn = document.getElementById(`btn-ik-${arm}`);
+  const current = btn.classList.contains('on');
+  send({ type: 'set_ik', arm: arm, enabled: !current });
+}
+
+// ===========================================================================
+// Camera
+// ===========================================================================
+function buildCameraCards() {
+  const grid = document.getElementById('camerasGrid');
+  grid.innerHTML = '';
+  for (const cam of cameraNames) {
+    const card = document.createElement('div');
+    card.className = 'camera-card';
+    card.id = `cam-${cam}`;
+    card.innerHTML = `
+      <div class="camera-header">${cam}</div>
+      <div class="camera-body">
+        <img id="cam-img-${cam}" style="display:none;" alt="${cam}">
+        <span class="no-signal" id="cam-nosignal-${cam}">No Signal</span>
+      </div>
+      <div class="camera-footer">
+        <span id="cam-res-${cam}">--</span>
+        <span id="cam-frames-${cam}">Frames: 0</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+let cameraFrameCount = {};
+function updateCameraFrame(cam, b64data, width, height) {
+  const img = document.getElementById(`cam-img-${cam}`);
+  const nosig = document.getElementById(`cam-nosignal-${cam}`);
+  const res = document.getElementById(`cam-res-${cam}`);
+  const frames = document.getElementById(`cam-frames-${cam}`);
+  if (!img) return;
+
+  img.src = 'data:image/jpeg;base64,' + b64data;
+  img.style.display = 'block';
+  if (nosig) nosig.style.display = 'none';
+  if (res) res.textContent = `${width}x${height}`;
+
+  cameraFrameCount[cam] = (cameraFrameCount[cam] || 0) + 1;
+  if (frames) frames.textContent = `Frames: ${cameraFrameCount[cam]}`;
+}
+
+// ===========================================================================
+// Recorder
+// ===========================================================================
+function recorderCmd(cmd) {
+  if (cmd === 'start') {
+    const task = document.getElementById('recTask').value;
+    const dataset = document.getElementById('recDataset').value;
+    send({ type: 'recorder_start', task: task, dataset_name: dataset });
+  } else {
+    send({ type: `recorder_${cmd}` });
+  }
+}
+
+function updateRecorderPanel(data) {
+  if (!data) return;
+
+  // error or unavailable
+  if (data.error || data.available === false) {
+    document.getElementById('recState').textContent = 'unavailable';
+    document.getElementById('recState').className = 'recorder-state idle';
+    return;
+  }
+
+  const state = data.state || data.status || 'idle';
+  const stateEl = document.getElementById('recState');
+  stateEl.textContent = state;
+  stateEl.className = 'recorder-state ' + (
+    state === 'recording' ? 'recording' :
+    state === 'paused' ? 'paused' : 'idle'
+  );
+
+  // buttons
+  const isIdle = state === 'idle' || state === 'stopped' || state === 'saved';
+  const isRecording = state === 'recording';
+  const isPaused = state === 'paused';
+
+  document.getElementById('btnRecStart').disabled = !isIdle;
+  document.getElementById('btnRecPause').disabled = !isRecording;
+  document.getElementById('btnRecResume').disabled = !isPaused;
+  document.getElementById('btnRecStop').disabled = isIdle;
+  document.getElementById('btnRecCancel').disabled = isIdle;
+
+  // form fields
+  document.getElementById('recTask').disabled = !isIdle;
+  document.getElementById('recDataset').disabled = !isIdle;
+
+  // stats
+  const ep = data.episode_index ?? data.episode ?? '--';
+  const frames = data.frame_count ?? data.frames ?? '--';
+  const duration = data.duration_sec ?? data.duration ?? '--';
+  const total = data.total_episodes ?? data.dataset_episodes ?? '--';
+
+  document.getElementById('recEpisode').textContent = ep;
+  document.getElementById('recFrames').textContent = frames;
+  document.getElementById('recDuration').textContent =
+    typeof duration === 'number' ? duration.toFixed(1) + 's' : duration;
+  document.getElementById('recDatasetTotal').textContent = total;
+}
+
+// ===========================================================================
+// Init
+// ===========================================================================
+connect();
+</script>
+</body>
+</html>
