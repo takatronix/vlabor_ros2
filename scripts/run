@@ -101,6 +101,45 @@ setup_display() {
     fi
 }
 
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+open_browser() {
+    local urls=()
+    case "$PROFILE" in
+        so101_vr_dual_teleop|so101_dual_teleop)
+            urls=("http://localhost:8888" "http://localhost:8080" "http://localhost:8081") ;;
+        so101_single_teleop)
+            urls=("http://localhost:8888" "http://localhost:8080") ;;
+        overhead_camera)
+            urls=("http://localhost:8888") ;;
+        *)  return ;;
+    esac
+
+    sleep 3
+
+    local opened=false
+    for url in "${urls[@]}"; do
+        if ssh -o ConnectTimeout=2 -o BatchMode=yes mac "open '$url'" 2>/dev/null; then
+            echo -e "${GREEN}🌐 Opened: $url${NC}"
+            opened=true
+        fi
+    done
+
+    if [ "$opened" = false ]; then
+        echo ""
+        echo -e "${CYAN}========================================${NC}"
+        echo -e "${CYAN}  Web UI URLs${NC}"
+        echo -e "${CYAN}========================================${NC}"
+        for url in "${urls[@]}"; do
+            echo -e "  ${GREEN}$url${NC}"
+        done
+        echo -e "${CYAN}========================================${NC}"
+        echo ""
+    fi
+}
+
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     print_usage
     exit 0
@@ -121,4 +160,7 @@ trap 'rm -f "$LAUNCH_PID_FILE"' EXIT
 ros2 launch vlabor_launch vlabor.launch.py profile:=${PROFILE} "$@" &
 launch_pid=$!
 echo "$launch_pid" > "$LAUNCH_PID_FILE"
+
+open_browser &
+
 wait "$launch_pid"
