@@ -1,9 +1,9 @@
-fv_camera:
+overhead_camera:
   ros__parameters:
     # 俯瞰カメラ(C920)の設定
     camera_selection:
-      selection_method: "index"
-      device_index: 0
+      selection_method: "name"
+      device_name: "C920"
     # topic: /overhead_camera/image_raw
     camera:
       width: 1280

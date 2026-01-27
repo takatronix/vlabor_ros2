@@ -2,7 +2,7 @@
 
 ## 開発フロー (最小)
 1) build
-   - `./scripts/build.sh`
+   - `./scripts/build`
 2) stop (必要な場合のみ)
    - `./scripts/stop`
 3) start
