@@ -8,6 +8,43 @@ VR_ROS2_DIR="$(dirname "$SCRIPT_DIR")"
 ROS2_WS="$(dirname "$(dirname "$VR_ROS2_DIR")")"
 LAUNCH_PID_FILE="/tmp/vr_teleop_launch.pid"
 
+FLUENT_VISION_SRC="$ROS2_WS/src/fluent_vision_ros2"
+VLABOR_SRC="$ROS2_WS/src/vlabor_ros2"
+
+# run 冒頭: fluent_vision / vlabor を git pull し、更新があれば colcon build
+update_and_build() {
+    local need_build=0
+    local out
+
+    echo "[run] git pull: fluent_vision_ros2, vlabor_ros2"
+
+    if [ -d "$FLUENT_VISION_SRC/.git" ]; then
+        out=$(git -C "$FLUENT_VISION_SRC" pull 2>&1) || true
+        echo "$out" | sed 's/^/  fv: /'
+        if ! echo "$out" | grep -q "Already up to date"; then
+            need_build=1
+        fi
+    fi
+
+    if [ -d "$VLABOR_SRC/.git" ]; then
+        out=$(git -C "$VLABOR_SRC" pull 2>&1) || true
+        echo "$out" | sed 's/^/  vl: /'
+        if ! echo "$out" | grep -q "Already up to date"; then
+            need_build=1
+        fi
+    fi
+
+    if [ "$need_build" -eq 1 ]; then
+        echo "[run] 更新あり → colcon build --symlink-install"
+        # shellcheck source=/dev/null
+        source /opt/ros/humble/setup.bash 2>/dev/null || true
+        (cd "$ROS2_WS" && colcon build --symlink-install) || {
+            echo "[run] WARN: build に失敗しました。既存の install のまま起動します。" >&2
+        }
+    fi
+    echo ""
+}
+
 print_usage() {
     echo "Usage: run <profile> [key:=value ...]"
     echo ""
@@ -161,6 +198,8 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     print_usage
     exit 0
 fi
+
+update_and_build
 
 if [ $# -lt 1 ]; then
     select_profile
