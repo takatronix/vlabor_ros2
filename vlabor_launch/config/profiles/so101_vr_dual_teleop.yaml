@@ -52,6 +52,7 @@ profile:
         web_port: ${dashboard_port}
         profile: so101_vr_dual_teleop
         arm_namespaces: [left_arm, right_arm]
+        webui_ports: ["${left_webui_port}", "${right_webui_port}"]
         camera_topics: [/overhead_camera/image_raw]
         camera_names: [overhead_camera]
     - type: include
