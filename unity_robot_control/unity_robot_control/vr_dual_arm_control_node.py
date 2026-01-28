@@ -9,6 +9,7 @@ VRがリーダー（教示者）として機能し、両アームは独立して
 設定ファイルでアーム種類（SO101, PIPER, DAIHENなど）を切り替え可能。
 """
 import math
+import time
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
@@ -29,6 +30,56 @@ except (ImportError, Exception):
     HandGesture = None
 
 
+class OneEuroFilter:
+    """One Euro Filter — VR入力のジッター除去に最適な適応フィルタ
+    静止時は強くスムーズ化、素早い動きでは遅延を最小化する。
+    参考: https://cristal.univ-lille.fr/~casiez/1euro/
+    """
+
+    def __init__(self, min_cutoff=0.8, beta=5.0, d_cutoff=0.9):
+        self.min_cutoff = min_cutoff  # 最低カットオフ周波数(Hz) — 小さいほどスムーズ
+        self.beta = beta              # 速度係数 — 大きいほど速い動きへの追従が良い
+        self.d_cutoff = d_cutoff      # 微分のカットオフ周波数(Hz)
+        self._x_prev = None
+        self._dx_prev = 0.0
+        self._t_prev = None
+
+    def reset(self):
+        self._x_prev = None
+        self._dx_prev = 0.0
+        self._t_prev = None
+
+    def __call__(self, x, t=None):
+        if t is None:
+            t = time.monotonic()
+        if self._t_prev is None or self._x_prev is None:
+            self._x_prev = x
+            self._t_prev = t
+            return x
+
+        dt = t - self._t_prev
+        if dt <= 0.0:
+            return self._x_prev
+        self._t_prev = t
+
+        # 微分の推定
+        dx = (x - self._x_prev) / dt
+        alpha_d = self._alpha(self.d_cutoff, dt)
+        self._dx_prev = alpha_d * dx + (1.0 - alpha_d) * self._dx_prev
+
+        # 適応カットオフ周波数（速い動き→高カットオフ→少ないスムーズ化）
+        cutoff = self.min_cutoff + self.beta * abs(self._dx_prev)
+        alpha = self._alpha(cutoff, dt)
+
+        self._x_prev = alpha * x + (1.0 - alpha) * self._x_prev
+        return self._x_prev
+
+    @staticmethod
+    def _alpha(cutoff, dt):
+        tau = 1.0 / (2.0 * math.pi * cutoff)
+        return 1.0 / (1.0 + tau / dt)
+
+
 class ArmState:
     """片腕の状態管理"""
     def __init__(self, name: str):
@@ -39,6 +90,21 @@ class ArmState:
         self.publish_rate = None
         self.grip_pressed = False
         self.last_trigger = None
+        # One-Euro Filter（init_filtersで初期化）
+        self.filter_x = None
+        self.filter_y = None
+        self.filter_z = None
+
+    def init_filters(self, min_cutoff=0.8, beta=5.0, d_cutoff=0.9):
+        self.filter_x = OneEuroFilter(min_cutoff, beta, d_cutoff)
+        self.filter_y = OneEuroFilter(min_cutoff, beta, d_cutoff)
+        self.filter_z = OneEuroFilter(min_cutoff, beta, d_cutoff)
+
+    def reset_filters(self):
+        if self.filter_x is not None:
+            self.filter_x.reset()
+            self.filter_y.reset()
+            self.filter_z.reset()
 
 
 class VRDualArmControlNode(Node):
@@ -62,6 +128,9 @@ class VRDualArmControlNode(Node):
         # 状態管理
         self._left = ArmState('left')
         self._right = ArmState('right')
+        if self.enable_smoothing:
+            self._left.init_filters(self.smoothing_min_cutoff, self.smoothing_beta, self.smoothing_d_cutoff)
+            self._right.init_filters(self.smoothing_min_cutoff, self.smoothing_beta, self.smoothing_d_cutoff)
         self._last_pose_log_time = 0.0
         self._last_clamp_log_time = 0.0
         # ボタン状態（左右独立）
@@ -163,6 +232,12 @@ class VRDualArmControlNode(Node):
         self.declare_parameter('left_arm_go_home_service', '/left_arm/go_home')
         self.declare_parameter('right_arm_go_home_service', '/right_arm/go_home')
 
+        # === スムーズフィルタ (One-Euro Filter) ===
+        self.declare_parameter('enable_smoothing', True)
+        self.declare_parameter('smoothing_min_cutoff', 0.8)  # 最低カットオフ(Hz): 小さい=よりスムーズ
+        self.declare_parameter('smoothing_beta', 5.0)         # 速度係数: 大きい=速い動きの追従が良い
+        self.declare_parameter('smoothing_d_cutoff', 0.9)     # 微分カットオフ(Hz)
+
         # === デバッグ ===
         self.declare_parameter('enable_debug_pose_logs', True)
 
@@ -232,6 +307,12 @@ class VRDualArmControlNode(Node):
         self.left_arm_go_home_service = self.get_parameter('left_arm_go_home_service').value
         self.right_arm_go_home_service = self.get_parameter('right_arm_go_home_service').value
 
+        # スムーズフィルタ (One-Euro Filter)
+        self.enable_smoothing = self.get_parameter('enable_smoothing').value
+        self.smoothing_min_cutoff = float(self.get_parameter('smoothing_min_cutoff').value)
+        self.smoothing_beta = float(self.get_parameter('smoothing_beta').value)
+        self.smoothing_d_cutoff = float(self.get_parameter('smoothing_d_cutoff').value)
+
         # デバッグ
         self.enable_debug_pose_logs = self.get_parameter('enable_debug_pose_logs').value
 
@@ -247,6 +328,11 @@ class VRDualArmControlNode(Node):
             f'Axis remap: enable={self.enable_axis_remap}, map={self.axis_map}; '
             f'Position clamp: enable={self.enable_position_clamp}'
         )
+        if self.enable_smoothing:
+            self.get_logger().info(
+                f'One-Euro Filter enabled (min_cutoff={self.smoothing_min_cutoff}, '
+                f'beta={self.smoothing_beta}, d_cutoff={self.smoothing_d_cutoff})'
+            )
         if self.enable_relative_mode:
             self.get_logger().info(f'Relative mode enabled (auto_reset={self.enable_auto_origin_reset})')
         if self.enable_grip_to_move:
@@ -364,8 +450,8 @@ class VRDualArmControlNode(Node):
             target_msg.pose.position.y -= arm.origin.y
             target_msg.pose.position.z -= arm.origin.z
 
-        # オフセット・スケール・クランプ適用
-        self._apply_pose_offset(target_msg, offset)
+        # フィルタ・オフセット・スケール・クランプ適用
+        self._apply_pose_offset(target_msg, offset, arm)
 
         publisher.publish(target_msg)
         self._update_publish_rate(arm)
@@ -427,6 +513,7 @@ class VRDualArmControlNode(Node):
         if self._left.grip_pressed and not left_prev:
             self.get_logger().info('Left grip pressed - arm control enabled')
             self._left.origin = None
+            self._left.reset_filters()
             self.left_enable_pub.publish(Bool(data=True))
         elif not self._left.grip_pressed and left_prev:
             self.get_logger().info('Left grip released - arm control disabled')
@@ -434,6 +521,7 @@ class VRDualArmControlNode(Node):
         if self._right.grip_pressed and not right_prev:
             self.get_logger().info('Right grip pressed - arm control enabled')
             self._right.origin = None
+            self._right.reset_filters()
             self.right_enable_pub.publish(Bool(data=True))
         elif not self._right.grip_pressed and right_prev:
             self.get_logger().info('Right grip released - arm control disabled')
@@ -511,12 +599,19 @@ class VRDualArmControlNode(Node):
     # ユーティリティ
     # =========================================================================
 
-    def _apply_pose_offset(self, target_msg: PoseStamped, offset_xyz):
-        """座標変換・スケール・オフセット・安全制限を適用"""
+    def _apply_pose_offset(self, target_msg: PoseStamped, offset_xyz, arm: ArmState):
+        """座標変換・スムーズフィルタ・スケール・オフセット・安全制限を適用"""
         p = target_msg.pose.position
 
         if self.enable_axis_remap:
             p.x, p.y, p.z = self._remap_axes(p.x, p.y, p.z)
+
+        # One-Euro Filter（速い動きは追従、静止時はジッター除去）
+        if self.enable_smoothing and arm.filter_x is not None:
+            t = time.monotonic()
+            p.x = arm.filter_x(p.x, t)
+            p.y = arm.filter_y(p.y, t)
+            p.z = arm.filter_z(p.z, t)
 
         if self.enable_pose_offset:
             p.x = p.x * self.position_scale + float(offset_xyz[0])
@@ -615,6 +710,9 @@ class VRDualArmControlNode(Node):
         self._right.origin = None
         self._left.last_pose_time = None
         self._right.last_pose_time = None
+        # One-Euro Filterもリセット
+        self._left.reset_filters()
+        self._right.reset_filters()
 
     def _call_go_home_service(self, arm: str):
         """指定アームのgo_homeサービスを呼び出す"""

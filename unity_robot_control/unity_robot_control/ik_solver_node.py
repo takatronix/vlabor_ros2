@@ -58,6 +58,7 @@ class IKSolverNode(Node):
         self.ik_joint_count = None
         self._last_tf_warn = 0.0
         self._last_ik_warn = 0.0
+        self._last_ik_time = None  # 速度ベースdelta limit用
         self._last_joint_warn = 0.0
         self._has_joint_state = False
         self._ik_stats_window_start = None
@@ -109,9 +110,11 @@ class IKSolverNode(Node):
         self.declare_parameter('use_approximate_on_fail', True)  # 失敗時でも近似解を使う
         self.declare_parameter('approximate_error_threshold', 0.1)  # この誤差以下なら近似解を使う(m)
 
-        # 新パラメータ: 関節角度変化量制限（滑らかさ）
+        # 関節角度変化量制限（滑らかさ）
         self.declare_parameter('enable_delta_limit', True)
-        self.declare_parameter('max_joint_delta_rad', 0.3)  # 1回の更新での最大変化量(rad) ≈ 17度
+        self.declare_parameter('max_joint_delta_rad', 0.3)  # フォールバック用（dt不明時）
+        # 速度ベース制限（推奨）— 実時間で一定速度に制限
+        self.declare_parameter('max_joint_velocity_rad_per_sec', 8.0)
 
     def _load_parameters(self):
         """パラメータ取得"""
@@ -148,6 +151,7 @@ class IKSolverNode(Node):
         # 関節角度変化量制限
         self.enable_delta_limit = self.get_parameter('enable_delta_limit').value
         self.max_joint_delta_rad = float(self.get_parameter('max_joint_delta_rad').value)
+        self.max_joint_velocity = float(self.get_parameter('max_joint_velocity_rad_per_sec').value)
 
     def _setup_subscriptions(self):
         """Subscriber作成"""
@@ -622,9 +626,9 @@ class IKSolverNode(Node):
                     self._last_ik_warn = now_sec
                 return None
 
-        # Delta limit適用
+        # Delta limit適用（速度ベース）
         if positions and self.enable_delta_limit and self._last_output_positions is not None:
-            positions, limited = self._apply_delta_limit(positions)
+            positions, limited = self._apply_delta_limit(positions, now_sec)
             if limited:
                 self._ik_stats['delta_limited'] += 1
                 status += ' [DELTA_LIMITED]'
@@ -636,22 +640,30 @@ class IKSolverNode(Node):
 
         return positions
 
-    def _apply_delta_limit(self, positions):
-        """関節角度の変化量を制限（滑らかな動き）"""
+    def _apply_delta_limit(self, positions, now_sec):
+        """関節角度の変化量を制限（速度ベース、滑らかな動き）"""
         limited = False
         result = []
+
+        # 実時間ベースのdelta計算
+        if self._last_ik_time is not None and now_sec > self._last_ik_time:
+            dt = now_sec - self._last_ik_time
+            dt = min(dt, 0.1)  # 100ms以上のギャップは制限しない
+            max_delta = self.max_joint_velocity * dt
+        else:
+            max_delta = self.max_joint_delta_rad  # フォールバック
 
         for i, (new_pos, old_pos) in enumerate(zip(positions, self._last_output_positions)):
             delta = new_pos - old_pos
 
-            if abs(delta) > self.max_joint_delta_rad:
-                # 制限を適用
-                clamped_delta = self.max_joint_delta_rad if delta > 0 else -self.max_joint_delta_rad
+            if abs(delta) > max_delta:
+                clamped_delta = max_delta if delta > 0 else -max_delta
                 result.append(old_pos + clamped_delta)
                 limited = True
             else:
                 result.append(new_pos)
 
+        self._last_ik_time = now_sec
         return result, limited
 
     def joint_states_callback(self, msg: JointState):

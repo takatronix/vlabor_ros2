@@ -79,6 +79,15 @@ vr_dual_arm_control_node:
     position_max_xyz: [0.35, 0.25, 0.35]
 
     # =========================================================================
+    # スムーズフィルタ — One-Euro Filter（VR入力のジッター低減）
+    # 静止時は強くスムーズ化、素早い動きでは遅延を最小化する適応フィルタ
+    # =========================================================================
+    enable_smoothing: true
+    smoothing_min_cutoff: 0.8   # 最低カットオフ周波数(Hz): 小さい=よりスムーズ
+    smoothing_beta: 5.0         # 速度係数: 大きい=速い動きへの追従が良い
+    smoothing_d_cutoff: 0.9     # 微分カットオフ(Hz)
+
+    # =========================================================================
     # 相対モード
     # =========================================================================
     # true: VRの「動き」がアームの動きになる（推奨）
@@ -156,7 +165,8 @@ left_arm_ik_solver_node:
     approximate_error_threshold: 0.1   # この誤差(m)以下なら近似解を使う
     # 関節角度変化量制限（滑らかさ）
     enable_delta_limit: true
-    max_joint_delta_rad: 0.3           # 1回の更新での最大変化量(rad) ≈ 17度
+    max_joint_delta_rad: 0.3           # フォールバック用（dt不明時）
+    max_joint_velocity_rad_per_sec: 8.0  # 速度ベース制限(rad/sec)
 
 # =============================================================================
 # 右アームIKソルバー設定
@@ -181,7 +191,8 @@ right_arm_ik_solver_node:
     approximate_error_threshold: 0.1   # この誤差(m)以下なら近似解を使う
     # 関節角度変化量制限（滑らかさ）
     enable_delta_limit: true
-    max_joint_delta_rad: 0.3           # 1回の更新での最大変化量(rad) ≈ 17度
+    max_joint_delta_rad: 0.3           # フォールバック用（dt不明時）
+    max_joint_velocity_rad_per_sec: 8.0  # 速度ベース制限(rad/sec)
 
 # =============================================================================
 # IK -> JointTrajectory 変換

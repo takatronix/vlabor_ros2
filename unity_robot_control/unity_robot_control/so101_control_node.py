@@ -101,6 +101,7 @@ class FeetechScservoDriver(BaseSo101Driver):
         self.scs = scs
         self.port_handler = scs.PortHandler(self.port)
         self.packet_handler = scs.PacketHandler(self.protocol_version)
+        self._use_sync_write = hasattr(scs, 'GroupSyncWrite')
         self.addr_torque_enable = self.ADDR_TORQUE_ENABLE
         self.addr_goal_position = self.ADDR_GOAL_POSITION
         self.addr_present_position = self.ADDR_PRESENT_POSITION
@@ -142,11 +143,33 @@ class FeetechScservoDriver(BaseSo101Driver):
         return ok
 
     def write_joint_targets(self, joint_positions: List[float]) -> None:
-        for idx, motor_id in enumerate(self.motor_ids):
+        """全モータに目標位置を書き込み（SyncWrite優先、フォールバックあり）"""
+        ticks_list = []
+        for idx in range(len(self.motor_ids)):
             rad = joint_positions[idx]
             ticks = int(round(rad * self.ticks_per_rad[idx] + self.ticks_offset[idx]))
             ticks = max(self.min_ticks[idx], min(self.max_ticks[idx], ticks))
-            self._write2(self.addr_goal_position, motor_id, ticks)
+            ticks_list.append(ticks)
+
+        if self._use_sync_write:
+            try:
+                sync_write = self.scs.GroupSyncWrite(
+                    self.port_handler, self.packet_handler,
+                    self.addr_goal_position, 2
+                )
+                for idx, motor_id in enumerate(self.motor_ids):
+                    ticks = ticks_list[idx]
+                    param = [ticks & 0xFF, (ticks >> 8) & 0xFF]
+                    sync_write.addParam(motor_id, param)
+                sync_write.txPacket()
+                sync_write.clearParam()
+                return
+            except Exception:
+                self._use_sync_write = False
+                self.logger.warn('SyncWrite失敗、個別書き込みにフォールバック')
+
+        for idx, motor_id in enumerate(self.motor_ids):
+            self._write2(self.addr_goal_position, motor_id, ticks_list[idx])
 
     def read_joint_states(self) -> List[float]:
         positions = []
@@ -302,6 +325,8 @@ class SO101ControlNode(Node):
         self.declare_parameter('home_position', [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         # ホーム移動時間（秒）
         self.declare_parameter('home_move_duration', 0.3)
+        # 詳細フィードバック（温度・電圧等）の配信レート
+        self.declare_parameter('detail_publish_rate_hz', 2)
 
         self.serial_port = self.get_parameter('serial_port').get_parameter_value().string_value
         self.baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
@@ -325,6 +350,7 @@ class SO101ControlNode(Node):
         self.urdf_path = self.get_parameter('urdf_path').get_parameter_value().string_value
         self.home_position = list(self.get_parameter('home_position').get_parameter_value().double_array_value)
         self.home_move_duration = float(self.get_parameter('home_move_duration').get_parameter_value().double_value)
+        self.detail_publish_rate_hz = int(self.get_parameter('detail_publish_rate_hz').get_parameter_value().integer_value)
 
         self._last_command: Optional[List[float]] = None
         # 記録したポジション（originはデフォルトで全関節0）
@@ -372,7 +398,11 @@ class SO101ControlNode(Node):
         self.create_subscription(String, 'goto_position', self.goto_position_callback, 1)
         self.get_logger().info('Home/position services enabled: go_home, save_position, goto_position')
 
+        # 位置フィードバック（軽量、高速）
         self.create_timer(1.0 / max(self.publish_rate_hz, 1), self.publish_feedback)
+        # 詳細フィードバック（温度・電圧等、低速）
+        if self.detail_publish_rate_hz > 0:
+            self.create_timer(1.0 / self.detail_publish_rate_hz, self.publish_detail_feedback)
 
         if self.auto_enable:
             self._enabled = True
@@ -539,37 +569,8 @@ class SO101ControlNode(Node):
         return positions
 
     def publish_feedback(self) -> None:
-        # 詳細情報を取得（Feetechドライバのみ）
-        if hasattr(self.driver, 'read_joint_states_detailed'):
-            detail = self.driver.read_joint_states_detailed()
-            positions = detail['positions']
-            # 詳細情報をJSON文字列でpublish
-            detail_msg = String()
-            detail_msg.data = json.dumps({
-                'joint_names': list(self.joint_names),
-                'motor_ids': detail['motor_ids'],
-                'positions': detail['positions'],
-                'ticks': detail['ticks'],
-                'errors': detail['errors'],
-                'comm_results': detail['comm_results'],
-                'temperatures': detail['temperatures'],
-                'voltages': detail['voltages'],
-                'loads': detail['loads'],
-                'currents': detail['currents'],
-                'speeds': detail['speeds'],
-                'enabled': self._enabled,
-                'ik_enabled': self._ik_enabled,
-                'calibration_file': self.calibration_path,
-                'urdf_file': self.urdf_path,
-                'calibration': {
-                    'ticks_offset': list(self.ticks_offset),
-                    'min_ticks': list(self.min_ticks),
-                    'max_ticks': list(self.max_ticks),
-                },
-            })
-            self.servo_detail_pub.publish(detail_msg)
-        else:
-            positions = self.driver.read_joint_states()
+        """位置フィードバック（軽量・高速）— 位置レジスタのみ読み取り"""
+        positions = self.driver.read_joint_states()
 
         if not positions:
             return
@@ -589,6 +590,36 @@ class SO101ControlNode(Node):
         self.joint_states_pub.publish(joint_states)
         self.joint_states_pub_compat.publish(joint_states)
         self.joint_states_feedback_pub.publish(joint_feedback)
+
+    def publish_detail_feedback(self) -> None:
+        """詳細フィードバック（温度・電圧等、低速）— シリアルバス負荷を分散"""
+        if not hasattr(self.driver, 'read_joint_states_detailed'):
+            return
+        detail = self.driver.read_joint_states_detailed()
+        detail_msg = String()
+        detail_msg.data = json.dumps({
+            'joint_names': list(self.joint_names),
+            'motor_ids': detail['motor_ids'],
+            'positions': detail['positions'],
+            'ticks': detail['ticks'],
+            'errors': detail['errors'],
+            'comm_results': detail['comm_results'],
+            'temperatures': detail['temperatures'],
+            'voltages': detail['voltages'],
+            'loads': detail['loads'],
+            'currents': detail['currents'],
+            'speeds': detail['speeds'],
+            'enabled': self._enabled,
+            'ik_enabled': self._ik_enabled,
+            'calibration_file': self.calibration_path,
+            'urdf_file': self.urdf_path,
+            'calibration': {
+                'ticks_offset': list(self.ticks_offset),
+                'min_ticks': list(self.min_ticks),
+                'max_ticks': list(self.max_ticks),
+            },
+        })
+        self.servo_detail_pub.publish(detail_msg)
 
     def gripper_cmd_callback(self, msg: Float32) -> None:
         if not self.enable_gripper_cmd:
