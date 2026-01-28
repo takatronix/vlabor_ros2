@@ -33,6 +33,18 @@ except ImportError:
     HAS_AMENT = False
 
 try:
+    from vlabor_launch.device_scanner import (
+        scan_serial_devices, scan_camera_devices,
+    )
+    from vlabor_launch.device_mapping import (
+        load_profile_device_slots, load_assignments,
+        save_assignments, auto_assign,
+    )
+    HAS_DEVICE_MANAGER = True
+except ImportError:
+    HAS_DEVICE_MANAGER = False
+
+try:
     from aiohttp import web, ClientSession
     HAS_AIOHTTP = True
 except ImportError:
@@ -775,6 +787,7 @@ class VlaborDashboardNode(Node):
             'recorder_status': self._recorder_status,
             'node_status': self._get_node_status_data(),
             'log_history': [e.to_dict() for e in self.log_buffer],
+            'has_device_manager': HAS_DEVICE_MANAGER,
         }
         await ws.send_str(json.dumps(init_data))
 
@@ -861,10 +874,132 @@ class VlaborDashboardNode(Node):
                 await ws.send_str(json.dumps(
                     {'type': 'log_history', 'logs': logs}))
 
+            # --- デバイス管理 ---
+            elif msg_type == 'scan_devices':
+                await self._handle_scan_devices(ws)
+
+            elif msg_type == 'get_device_slots':
+                await self._handle_get_device_slots(ws, msg)
+
+            elif msg_type == 'save_device_assignments':
+                await self._handle_save_device_assignments(ws, msg)
+
+            elif msg_type == 'auto_assign_devices':
+                await self._handle_auto_assign_devices(ws, msg)
+
         except json.JSONDecodeError:
             await ws.send_str(json.dumps({'type': 'error', 'message': 'Invalid JSON'}))
         except Exception as e:
             await ws.send_str(json.dumps({'type': 'error', 'message': str(e)}))
+
+
+    # ------------------------------------------------------------------
+    # Device Management Handlers
+    # ------------------------------------------------------------------
+
+    async def _handle_scan_devices(self, ws):
+        """接続デバイスをスキャンして返却"""
+        if not HAS_DEVICE_MANAGER:
+            await ws.send_str(json.dumps({
+                'type': 'devices_scan_result',
+                'devices': [],
+                'error': 'vlabor_launch.device_scanner が利用できません',
+            }))
+            return
+        try:
+            serials = scan_serial_devices()
+            cameras = scan_camera_devices()
+            devices = [d.to_dict() for d in serials + cameras]
+            await ws.send_str(json.dumps({
+                'type': 'devices_scan_result',
+                'devices': devices,
+            }))
+        except Exception as e:
+            await ws.send_str(json.dumps({
+                'type': 'devices_scan_result',
+                'devices': [],
+                'error': str(e),
+            }))
+
+    async def _handle_get_device_slots(self, ws, msg: Dict):
+        """プロファイルのデバイススロット定義と現在の割り当てを返却"""
+        if not HAS_DEVICE_MANAGER:
+            await ws.send_str(json.dumps({
+                'type': 'device_slots_result',
+                'slots': [],
+                'assignments': {},
+            }))
+            return
+        profile_name = msg.get('profile', self.profile)
+        try:
+            slots = load_profile_device_slots(profile_name)
+            assignments = load_assignments(profile_name)
+            await ws.send_str(json.dumps({
+                'type': 'device_slots_result',
+                'profile': profile_name,
+                'slots': slots,
+                'assignments': assignments,
+            }))
+        except Exception as e:
+            await ws.send_str(json.dumps({
+                'type': 'device_slots_result',
+                'slots': [],
+                'assignments': {},
+                'error': str(e),
+            }))
+
+    async def _handle_save_device_assignments(self, ws, msg: Dict):
+        """デバイス割り当てを保存"""
+        if not HAS_DEVICE_MANAGER:
+            await ws.send_str(json.dumps({
+                'type': 'device_assignments_saved',
+                'success': False,
+                'error': 'vlabor_launch.device_mapping が利用できません',
+            }))
+            return
+        profile_name = msg.get('profile', self.profile)
+        assignments = msg.get('assignments', {})
+        try:
+            path = save_assignments(profile_name, assignments)
+            self.get_logger().info(
+                f'デバイス割り当て保存: {profile_name} -> {path}')
+            await ws.send_str(json.dumps({
+                'type': 'device_assignments_saved',
+                'profile': profile_name,
+                'path': path,
+                'success': True,
+            }))
+        except Exception as e:
+            self.get_logger().error(f'デバイス割り当て保存エラー: {e}')
+            await ws.send_str(json.dumps({
+                'type': 'device_assignments_saved',
+                'success': False,
+                'error': str(e),
+            }))
+
+    async def _handle_auto_assign_devices(self, ws, msg: Dict):
+        """自動割り当てを実行して結果を返却"""
+        if not HAS_DEVICE_MANAGER:
+            await ws.send_str(json.dumps({
+                'type': 'device_auto_assign_result',
+                'assignments': {},
+                'error': 'vlabor_launch.device_mapping が利用できません',
+            }))
+            return
+        profile_name = msg.get('profile', self.profile)
+        try:
+            result = auto_assign(profile_name)
+            await ws.send_str(json.dumps({
+                'type': 'device_auto_assign_result',
+                'profile': profile_name,
+                'assignments': result,
+            }))
+        except Exception as e:
+            await ws.send_str(json.dumps({
+                'type': 'device_auto_assign_result',
+                'assignments': {},
+                'error': str(e),
+            }))
 
 
 # ---------------------------------------------------------------------------

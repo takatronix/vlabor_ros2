@@ -227,7 +227,20 @@ setup_display
 
 trap 'rm -f "$LAUNCH_PID_FILE"' EXIT
 
-ros2 launch vlabor_launch vlabor.launch.py profile:=${PROFILE} "$@" &
+# デバイス割り当てファイルから override 引数を取得
+DEVICE_OVERRIDES=""
+if python3 -c "from vlabor_launch.device_mapping import resolve_to_overrides" 2>/dev/null; then
+    DEVICE_OVERRIDES=$(python3 -c "
+from vlabor_launch.device_mapping import resolve_to_overrides
+overrides = resolve_to_overrides('${PROFILE}')
+print(' '.join(f'{k}:={v}' for k, v in overrides.items()))
+" 2>/dev/null) || true
+    if [ -n "$DEVICE_OVERRIDES" ]; then
+        echo "[run] デバイス割り当て適用: $DEVICE_OVERRIDES"
+    fi
+fi
+
+ros2 launch vlabor_launch vlabor.launch.py profile:=${PROFILE} ${DEVICE_OVERRIDES} "$@" &
 launch_pid=$!
 echo "$launch_pid" > "$LAUNCH_PID_FILE"
 

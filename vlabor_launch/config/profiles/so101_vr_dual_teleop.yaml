@@ -1,6 +1,15 @@
 profile:
   name: so101_vr_dual_teleop
   description: "VR dual-arm teleop + overhead camera (C920)"
+  devices:
+    - key: left_serial_port
+      label: "左アーム シリアルポート"
+      type: serial
+      default: "/dev/ttyACM0"
+    - key: right_serial_port
+      label: "右アーム シリアルポート"
+      type: serial
+      default: "/dev/ttyACM1"
   actions:
     - type: include
       package: fv_camera

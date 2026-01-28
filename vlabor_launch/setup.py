@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import os
 from glob import glob
 
@@ -7,7 +7,7 @@ package_name = 'vlabor_launch'
 setup(
     name=package_name,
     version='0.1.0',
-    packages=[],
+    packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -15,6 +15,8 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
         (os.path.join('share', package_name, 'config', 'profiles'), glob('config/profiles/*.yaml')),
+        (os.path.join('share', package_name, 'config', 'device_assignments'),
+            glob('config/device_assignments/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

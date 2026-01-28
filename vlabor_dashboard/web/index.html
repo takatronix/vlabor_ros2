@@ -465,6 +465,128 @@ body {
 .log-line.level-error { background: rgba(255,82,82,0.05); }
 .log-line.level-fatal .log-level { color: var(--red); font-weight: 800; }
 .log-line.level-fatal { background: rgba(255,82,82,0.1); }
+
+/* ===== Devices Tab ===== */
+.devices-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.devices-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.devices-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(0,217,255,0.05);
+  border-bottom: 1px solid var(--border);
+}
+.devices-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.device-actions { display: flex; gap: 8px; }
+.device-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+.device-slot-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+}
+.device-slot-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.device-slot-key {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'Consolas', monospace;
+  margin-bottom: 8px;
+}
+.device-slot-select {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: 'Consolas', monospace;
+}
+.device-slot-select:focus { outline: none; border-color: var(--accent); }
+.device-slot-confidence {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.confidence-high { color: var(--green); }
+.confidence-medium { color: var(--orange); }
+.confidence-low { color: var(--yellow); }
+.confidence-none { color: var(--text-muted); }
+
+.detected-devices-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.detected-devices-panel h4 {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(0,217,255,0.03);
+  border-bottom: 1px solid var(--border);
+}
+.detected-devices-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.detected-devices-table th {
+  text-align: left;
+  padding: 6px 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+}
+.detected-devices-table td {
+  padding: 6px 12px;
+  font-family: 'Consolas', monospace;
+  border-bottom: 1px solid rgba(42,42,64,0.5);
+}
+.detected-devices-table tr:hover td { background: rgba(0,217,255,0.03); }
+.device-type-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.device-type-badge.serial { background: rgba(0,217,255,0.15); color: var(--accent); }
+.device-type-badge.camera { background: rgba(187,134,252,0.15); color: var(--purple); }
+.devices-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.device-status-msg {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
 </style>
 </head>
 <body>
@@ -486,6 +608,7 @@ body {
   <div class="tab active" data-tab="arms" id="tabArms">Arms</div>
   <div class="tab" data-tab="camera" id="tabCamera">Camera</div>
   <div class="tab" data-tab="recorder" id="tabRecorder">Recorder</div>
+  <div class="tab" data-tab="devices" id="tabDevices">Devices</div>
   <div class="tab" data-tab="nodes" id="tabNodes">Nodes</div>
 </div>
 
@@ -549,6 +672,32 @@ body {
     </div>
   </div>
 
+  <!-- Devices Tab -->
+  <div class="tab-panel" id="panelDevices">
+    <div class="devices-layout">
+      <div class="devices-panel">
+        <div class="devices-header">
+          <h3>デバイス割り当て</h3>
+          <div class="device-actions">
+            <button class="rec-btn resume" onclick="scanDevices()">スキャン</button>
+            <button class="rec-btn pause" onclick="autoAssignDevices()">自動割り当て</button>
+            <button class="rec-btn start" onclick="saveDeviceAssignments()">保存</button>
+          </div>
+        </div>
+        <div class="device-slots-grid" id="deviceSlotsGrid">
+          <div class="devices-empty">「スキャン」でデバイスを検出してください</div>
+        </div>
+        <div class="device-status-msg" id="deviceStatusMsg" style="display:none;"></div>
+      </div>
+      <div class="detected-devices-panel">
+        <h4>検出デバイス一覧</h4>
+        <div id="detectedDevicesBody">
+          <div class="devices-empty">「スキャン」でデバイスを検出してください</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Nodes Tab -->
   <div class="tab-panel" id="panelNodes">
     <div class="nodes-layout">
@@ -591,6 +740,10 @@ let webuiPorts = {};  // arm -> port マッピング
 let reconnectTimer = null;
 let nodeStatuses = [];
 let logEntries = [];
+let detectedDevices = [];
+let deviceSlots = [];
+let currentDeviceAssignments = {};
+let hasDeviceManager = false;
 let logNodeNames = new Set();
 let selectedNodeFilter = '';
 let logAutoScroll = true;
@@ -644,6 +797,7 @@ function handleMessage(msg) {
       cameraNames = msg.cameras || [];
       webuiPorts = msg.webui_ports || {};
       document.getElementById('profileBadge').textContent = profile || 'default';
+      hasDeviceManager = !!msg.has_device_manager;
       applyProfileLayout();
       buildArmCards();
       buildCameraCards();
@@ -662,6 +816,7 @@ function handleMessage(msg) {
       if (msg.log_history) {
         appendLogs(msg.log_history);
       }
+      applyDevicesTab();
       break;
 
     case 'arm_update':
@@ -701,6 +856,31 @@ function handleMessage(msg) {
       appendLogs(msg.logs);
       break;
 
+    case 'devices_scan_result':
+      detectedDevices = msg.devices || [];
+      renderDetectedDevices();
+      updateDeviceDropdowns();
+      break;
+
+    case 'device_slots_result':
+      deviceSlots = msg.slots || [];
+      currentDeviceAssignments = msg.assignments || {};
+      renderDeviceSlots();
+      break;
+
+    case 'device_assignments_saved':
+      showDeviceStatus(msg.success
+        ? '保存しました: ' + (msg.path || '')
+        : 'エラー: ' + (msg.error || '不明'));
+      break;
+
+    case 'device_auto_assign_result':
+      currentDeviceAssignments = msg.assignments || {};
+      renderDeviceSlots();
+      updateDeviceDropdowns();
+      showDeviceStatus(msg.error ? 'エラー: ' + msg.error : '自動割り当て完了');
+      break;
+
     case 'error':
       console.warn('Dashboard error:', msg.message);
       break;
@@ -714,6 +894,7 @@ function applyProfileLayout() {
   const tabArms = document.getElementById('tabArms');
   const tabCamera = document.getElementById('tabCamera');
   const tabRecorder = document.getElementById('tabRecorder');
+  const tabDevices = document.getElementById('tabDevices');
 
   // show/hide tabs based on profile
   tabArms.classList.toggle('hidden', armNames.length === 0);
@@ -722,6 +903,11 @@ function applyProfileLayout() {
   // profiles without recorder
   const noRecorder = ['overhead_camera', 'vr_server_only', 'rviz_so101', 'gazebo_so101'];
   tabRecorder.classList.toggle('hidden', noRecorder.includes(profile));
+
+  // Devices tab: device_manager が利用可能なら表示
+  if (tabDevices) {
+    tabDevices.classList.toggle('hidden', !hasDeviceManager);
+  }
 
   // select first visible tab
   const tabs = document.querySelectorAll('.tab:not(.hidden)');
@@ -1173,6 +1359,150 @@ document.getElementById('logNodeFilter')?.addEventListener('change', (e) => {
   updateNodeCardSelection();
   renderFilteredLogs();
 });
+
+// ===========================================================================
+// Devices
+// ===========================================================================
+function applyDevicesTab() {
+  if (hasDeviceManager) {
+    send({ type: 'get_device_slots', profile: profile });
+  }
+}
+
+function scanDevices() {
+  send({ type: 'scan_devices' });
+  send({ type: 'get_device_slots', profile: profile });
+}
+
+function autoAssignDevices() {
+  send({ type: 'auto_assign_devices', profile: profile });
+  // 自動割り当て後にデバイスも再スキャン
+  send({ type: 'scan_devices' });
+}
+
+function saveDeviceAssignments() {
+  const assignments = {};
+  for (const slot of deviceSlots) {
+    const select = document.getElementById(`device-select-${slot.key}`);
+    if (select && select.value) {
+      const dev = detectedDevices.find(d => d.path === select.value);
+      assignments[slot.key] = {
+        label: slot.label,
+        device_path: select.value,
+        match: dev ? {
+          serial_number: dev.serial_number || null,
+          vendor_id: dev.vendor_id || null,
+          product_id: dev.product_id || null,
+        } : {},
+      };
+    }
+  }
+  send({ type: 'save_device_assignments', profile: profile, assignments: assignments });
+}
+
+function renderDeviceSlots() {
+  const grid = document.getElementById('deviceSlotsGrid');
+  if (!grid) return;
+
+  if (!deviceSlots || deviceSlots.length === 0) {
+    grid.innerHTML = '<div class="devices-empty">このプロファイルにはデバイススロットがありません</div>';
+    return;
+  }
+
+  let html = '';
+  for (const slot of deviceSlots) {
+    const assignment = currentDeviceAssignments[slot.key] || {};
+    const currentPath = assignment.device_path || slot.default || '';
+    const confidence = assignment.confidence || '';
+    const autoAssigned = assignment.auto_assigned || false;
+
+    let confidenceHtml = '';
+    if (confidence && autoAssigned) {
+      const cls = 'confidence-' + confidence;
+      const label = confidence === 'high' ? '高信頼度' :
+                    confidence === 'medium' ? '中信頼度' :
+                    confidence === 'low' ? '低信頼度' : '';
+      confidenceHtml = `<div class="device-slot-confidence ${cls}">${label}</div>`;
+    }
+
+    html += `
+      <div class="device-slot-card">
+        <div class="device-slot-label">${escapeHtml(slot.label)}</div>
+        <div class="device-slot-key">${escapeHtml(slot.key)}</div>
+        <select class="device-slot-select" id="device-select-${slot.key}" data-slot-key="${slot.key}">
+          <option value="">-- 未選択 --</option>
+          <option value="${escapeHtml(currentPath)}" selected>${escapeHtml(currentPath || '(なし)')}</option>
+        </select>
+        ${confidenceHtml}
+      </div>
+    `;
+  }
+  grid.innerHTML = html;
+  // ドロップダウンをデバイス一覧で更新
+  updateDeviceDropdowns();
+}
+
+function updateDeviceDropdowns() {
+  for (const slot of deviceSlots) {
+    const select = document.getElementById(`device-select-${slot.key}`);
+    if (!select) continue;
+
+    const currentValue = select.value;
+    const slotType = slot.type || 'serial';
+    const candidates = detectedDevices.filter(d => d.device_type === slotType);
+
+    // オプション再構築
+    let html = '<option value="">-- 未選択 --</option>';
+    for (const dev of candidates) {
+      const selected = dev.path === currentValue ? ' selected' : '';
+      html += `<option value="${escapeHtml(dev.path)}"${selected}>${escapeHtml(dev.display_name)}</option>`;
+    }
+
+    // 現在値が候補にない場合（デバイス未接続等）は別途追加
+    if (currentValue && !candidates.some(d => d.path === currentValue)) {
+      html += `<option value="${escapeHtml(currentValue)}" selected>${escapeHtml(currentValue)} (未検出)</option>`;
+    }
+
+    select.innerHTML = html;
+  }
+}
+
+function renderDetectedDevices() {
+  const body = document.getElementById('detectedDevicesBody');
+  if (!body) return;
+
+  if (!detectedDevices || detectedDevices.length === 0) {
+    body.innerHTML = '<div class="devices-empty">デバイスが検出されませんでした</div>';
+    return;
+  }
+
+  let html = '<table class="detected-devices-table"><thead><tr>';
+  html += '<th>パス</th><th>タイプ</th><th>製品名</th><th>シリアル</th><th>Vendor:Product</th>';
+  html += '</tr></thead><tbody>';
+
+  for (const dev of detectedDevices) {
+    const typeCls = dev.device_type === 'serial' ? 'serial' : 'camera';
+    const typeLabel = dev.device_type === 'serial' ? 'Serial' : 'Camera';
+    html += `<tr>
+      <td>${escapeHtml(dev.path)}</td>
+      <td><span class="device-type-badge ${typeCls}">${typeLabel}</span></td>
+      <td>${escapeHtml(dev.product_name || dev.manufacturer || '--')}</td>
+      <td>${escapeHtml(dev.serial_number || '--')}</td>
+      <td>${escapeHtml((dev.vendor_id || '?') + ':' + (dev.product_id || '?'))}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  body.innerHTML = html;
+}
+
+function showDeviceStatus(msg) {
+  const el = document.getElementById('deviceStatusMsg');
+  if (el) {
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+}
 
 // ===========================================================================
 // Init
