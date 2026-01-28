@@ -155,7 +155,9 @@ left_arm_ik_solver_node:
     target_pose_topic: "/left_arm/target_pose"
     joint_angles_topic: "/left_arm/ik/joint_angles"
     joint_states_topic: "/left_arm/joint_states"
-    use_orientation: false
+    # 姿勢追跡（5DOF重み付きIK）
+    use_orientation: true
+    orientation_weight: 0.3            # 姿勢の重み (0.0=無視, 0.3-0.5=推奨, 1.0=位置と同等)
     max_reach: 0.0
     ik_max_iterations: 30
     ik_tolerance: 0.005
@@ -181,7 +183,9 @@ right_arm_ik_solver_node:
     target_pose_topic: "/right_arm/target_pose"
     joint_angles_topic: "/right_arm/ik/joint_angles"
     joint_states_topic: "/right_arm/joint_states"
-    use_orientation: false
+    # 姿勢追跡（5DOF重み付きIK）
+    use_orientation: true
+    orientation_weight: 0.3            # 姿勢の重み (0.0=無視, 0.3-0.5=推奨, 1.0=位置と同等)
     max_reach: 0.0
     ik_max_iterations: 30
     ik_tolerance: 0.005

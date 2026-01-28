@@ -110,6 +110,10 @@ class IKSolverNode(Node):
         self.declare_parameter('use_approximate_on_fail', True)  # 失敗時でも近似解を使う
         self.declare_parameter('approximate_error_threshold', 0.1)  # この誤差以下なら近似解を使う(m)
 
+        # 姿勢追跡の重み（5DOFアーム向け）
+        # 位置を優先しつつ残りの自由度で姿勢を追跡する
+        self.declare_parameter('orientation_weight', 0.0)  # 0.0=姿勢無視, 0.3-0.5=推奨
+
         # 関節角度変化量制限（滑らかさ）
         self.declare_parameter('enable_delta_limit', True)
         self.declare_parameter('max_joint_delta_rad', 0.3)  # フォールバック用（dt不明時）
@@ -147,6 +151,9 @@ class IKSolverNode(Node):
         # IK失敗時の挙動
         self.use_approximate_on_fail = self.get_parameter('use_approximate_on_fail').value
         self.approximate_error_threshold = float(self.get_parameter('approximate_error_threshold').value)
+
+        # 姿勢追跡
+        self.orientation_weight = float(self.get_parameter('orientation_weight').value)
 
         # 関節角度変化量制限
         self.enable_delta_limit = self.get_parameter('enable_delta_limit').value
@@ -459,7 +466,12 @@ class IKSolverNode(Node):
         q_out = PyKDL.JntArray(joint_count)
 
         ik_start = time.perf_counter()
-        if self.use_orientation:
+        if self.use_orientation and self.orientation_weight > 0.0:
+            # 重み付き5DOF IK: 位置優先 + 姿勢追跡
+            rotation = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
+            result, position_error = self._solve_ik_weighted(pos, rotation, q_init, q_out)
+        elif self.use_orientation:
+            # KDL LMAソルバー（6DOFアーム向け）
             rotation = PyKDL.Rotation.Quaternion(quat.x, quat.y, quat.z, quat.w)
             frame = PyKDL.Frame(rotation, PyKDL.Vector(pos.x, pos.y, pos.z))
             result = self.ik_solver.CartToJnt(q_init, frame, q_out)
@@ -520,6 +532,78 @@ class IKSolverNode(Node):
             for i in range(min(joint_count, len(self._latest_joint_positions))):
                 q_init[i] = float(self._latest_joint_positions[i])
         return q_init
+
+    def _solve_ik_weighted(self, pos: Point, target_rotation: PyKDL.Rotation,
+                          q_init: PyKDL.JntArray, q_out: PyKDL.JntArray):
+        """位置+姿勢の重み付きIK（5DOFアーム向け）
+
+        位置を最優先し、残りの自由度で姿勢を追跡する。
+        6×N の全ヤコビアンに重み行列を適用し、ダンピング最小二乗法で解く。
+        """
+        if self.fk_solver is None or self.jac_solver is None:
+            return -1, None
+
+        q_tmp = PyKDL.JntArray(q_init)
+        damping = max(self.ik_damping, 1e-6)
+        target_pos = np.array([pos.x, pos.y, pos.z], dtype=float)
+        w_orient = self.orientation_weight
+
+        best_error = float('inf')
+        best_q = None
+        n_joints = q_out.rows()
+
+        for iteration in range(max(self.ik_max_iterations, 1)):
+            # FK: 現在のエンドエフェクタ姿勢
+            frame = PyKDL.Frame()
+            self.fk_solver.JntToCart(q_tmp, frame)
+            current_pos = np.array([frame.p[0], frame.p[1], frame.p[2]], dtype=float)
+
+            # 位置誤差
+            pos_error = target_pos - current_pos
+            pos_error_norm = np.linalg.norm(pos_error)
+
+            # 姿勢誤差（回転ベクトル: 軸×角度）
+            rot_diff = target_rotation * frame.M.Inverse()
+            rot_vec = rot_diff.GetRot()
+            orient_error = np.array([rot_vec[0], rot_vec[1], rot_vec[2]], dtype=float)
+
+            # ベスト解の更新（位置誤差基準）
+            if pos_error_norm < best_error:
+                best_error = pos_error_norm
+                best_q = [q_tmp[i] for i in range(n_joints)]
+
+            if pos_error_norm < self.ik_tolerance:
+                for i in range(n_joints):
+                    q_out[i] = q_tmp[i]
+                return 0, pos_error_norm
+
+            # 全ヤコビアン (6×N)
+            jac = PyKDL.Jacobian(n_joints)
+            self.jac_solver.JntToJac(q_tmp, jac)
+            j_full = np.zeros((6, n_joints), dtype=float)
+            for row in range(6):
+                for col in range(n_joints):
+                    j_full[row, col] = jac[row, col]
+
+            # 重み適用: 位置=1.0, 姿勢=orientation_weight
+            j_weighted = np.copy(j_full)
+            j_weighted[3:, :] *= w_orient
+            error_weighted = np.concatenate([pos_error, orient_error * w_orient])
+
+            # ダンピング最小二乗法
+            jj_t = j_weighted @ j_weighted.T
+            inv_mat = np.linalg.inv(jj_t + (damping * damping) * np.eye(6))
+            dq = j_weighted.T @ (inv_mat @ error_weighted)
+
+            for i in range(n_joints):
+                q_tmp[i] += float(dq[i])
+
+        # 収束しなかった場合はベスト解
+        if best_q is not None:
+            for i in range(n_joints):
+                q_out[i] = best_q[i]
+
+        return -101, best_error
 
     def _solve_ik_position_only(self, pos: Point, q_init: PyKDL.JntArray, q_out: PyKDL.JntArray):
         """位置のみでIKを解く（返り値: (result, position_error)）"""
