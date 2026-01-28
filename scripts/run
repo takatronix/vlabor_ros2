@@ -12,24 +12,29 @@ FLUENT_VISION_SRC="$ROS2_WS/src/fluent_vision_ros2"
 VLABOR_SRC="$ROS2_WS/src/vlabor_ros2"
 
 # run 冒頭: fluent_vision / vlabor を git pull し、更新があれば colcon build
+# （pull 前後の HEAD 比較で判定するのでロケールに依存しない）
 update_and_build() {
     local need_build=0
-    local out
+    local head_before head_after out
 
     echo "[run] git pull: fluent_vision_ros2, vlabor_ros2"
 
     if [ -d "$FLUENT_VISION_SRC/.git" ]; then
+        head_before=$(git -C "$FLUENT_VISION_SRC" rev-parse HEAD 2>/dev/null) || true
         out=$(git -C "$FLUENT_VISION_SRC" pull 2>&1) || true
         echo "$out" | sed 's/^/  fv: /'
-        if ! echo "$out" | grep -q "Already up to date"; then
+        head_after=$(git -C "$FLUENT_VISION_SRC" rev-parse HEAD 2>/dev/null) || true
+        if [ -n "$head_before" ] && [ -n "$head_after" ] && [ "$head_before" != "$head_after" ]; then
             need_build=1
         fi
     fi
 
     if [ -d "$VLABOR_SRC/.git" ]; then
+        head_before=$(git -C "$VLABOR_SRC" rev-parse HEAD 2>/dev/null) || true
         out=$(git -C "$VLABOR_SRC" pull 2>&1) || true
         echo "$out" | sed 's/^/  vl: /'
-        if ! echo "$out" | grep -q "Already up to date"; then
+        head_after=$(git -C "$VLABOR_SRC" rev-parse HEAD 2>/dev/null) || true
+        if [ -n "$head_before" ] && [ -n "$head_after" ] && [ "$head_before" != "$head_after" ]; then
             need_build=1
         fi
     fi
@@ -41,6 +46,8 @@ update_and_build() {
         (cd "$ROS2_WS" && colcon build --symlink-install) || {
             echo "[run] WARN: build に失敗しました。既存の install のまま起動します。" >&2
         }
+    else
+        echo "[run] 更新なし → ビルドスキップ"
     fi
     echo ""
 }
@@ -145,14 +152,21 @@ NC='\033[0m'
 # 表示用ホスト名（vlabor.local）と、外部から見たIPを取得
 HOST_NAME="vlabor.local"
 # IPv4 のみ取得（IPv6を出さない）
+# 外部からアクセス用の IPv4。Docker の 172.17.x.x は除外し、192.168/10 を優先
 get_external_ip() {
     local ip
-    ip=$(getent ahostsv4 vlabor.local 2>/dev/null | awk '{print $1; exit}')
+    # 192.168 / 10 系のみ（Docker 172.17、loopback 127、link-local 169.254 を除く）
+    ip=$( (getent ahostsv4 vlabor.local 2>/dev/null | awk '{print $1}' ; hostname -I 2>/dev/null | tr ' ' '\n') \
+        | grep -E "^(192\.168\.|10\.)[0-9.]+$" | head -1)
     if [ -z "$ip" ]; then
         ip=$(ip -4 route get 1 2>/dev/null | awk '{print $7; exit}')
+        case "$ip" in
+            127.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*|169.254.*) ip=""
+        esac
     fi
     if [ -z "$ip" ]; then
-        ip=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v ':' | head -1)
+        ip=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v ':' \
+            | grep -E "^(192\.168\.|10\.)" | head -1)
     fi
     echo "$ip"
 }
