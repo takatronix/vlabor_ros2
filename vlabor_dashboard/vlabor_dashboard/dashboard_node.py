@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-VLabor Dashboard Node
+VLAbor Dashboard Node
 プロファイル対応の統合ダッシュボード (サーボ情報、カメラ、レコーダー制御、ノード監視、ログ)
 
 aiohttp + WebSocket + ROS2
@@ -272,7 +272,7 @@ class VlaborDashboardNode(Node):
         # ノードディスカバリタイマー (2秒間隔)
         self.create_timer(2.0, self._poll_node_status)
 
-        self.get_logger().info(f'VLabor Dashboard initialized')
+        self.get_logger().info(f'VLAbor Dashboard initialized')
         self.get_logger().info(f'  Profile: {self.profile}')
         self.get_logger().info(f'  Port: {self.web_port}')
         self.get_logger().info(f'  Arms: {self.arm_namespaces}')
