@@ -15,7 +15,7 @@ Usage:
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -50,12 +50,13 @@ def generate_launch_description():
     config_file = LaunchConfiguration('config_file')
     use_sim_time = LaunchConfiguration('use_sim_time')
 
-    # Default preset path
+    # Default preset path - use string concatenation via PythonExpression for arm64 compatibility
+    preset_filename = PythonExpression(["'", preset, "' + '.yaml'"])
     default_config = PathJoinSubstitution([
         FindPackageShare('lerobot_recorder'),
         'config',
         'presets',
-        [preset, '.yaml']
+        preset_filename
     ])
 
     # Episode recorder node
