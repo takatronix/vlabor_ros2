@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VLABOR Dashboard</title>
+<title>VLabor Dashboard</title>
 <style>
 :root {
   --bg-primary: #0f0f1a;
@@ -116,19 +116,22 @@ body {
   color: var(--accent);
 }
 .arm-controls { display: flex; gap: 8px; }
-.ctrl-btn {
-  padding: 4px 12px;
-  border-radius: 4px;
+.settings-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-secondary);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
+  text-decoration: none;
 }
-.ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
-.ctrl-btn.on { background: var(--green); color: #000; border-color: var(--green); }
-.ctrl-btn.off { background: var(--red); color: #fff; border-color: var(--red); }
+.settings-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,217,255,0.1); }
 
 .arm-body { padding: 12px 16px; }
 
@@ -358,6 +361,110 @@ body {
 }
 .ik-pose span { color: var(--text-muted); }
 .ik-pose .val { color: var(--accent); }
+
+/* ===== Nodes Tab ===== */
+.nodes-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: calc(100vh - 130px);
+}
+.nodes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.node-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.node-card:hover { border-color: var(--accent-dim); background: var(--bg-card-hover); }
+.node-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.node-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.node-dot.running { background: var(--green); }
+.node-dot.stopped { background: var(--red); }
+.node-info { overflow: hidden; }
+.node-name {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.node-ns { font-size: 11px; color: var(--text-muted); }
+.nodes-summary {
+  display: flex; gap: 16px; align-items: center; margin-bottom: 8px;
+}
+.nodes-summary .stat { font-size: 13px; color: var(--text-secondary); }
+.nodes-summary .stat b { font-weight: 600; }
+.nodes-summary .stat.all-ok b { color: var(--green); }
+.nodes-summary .stat.has-down b { color: var(--red); }
+
+/* ログビューア */
+.log-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.log-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: rgba(0,217,255,0.03);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.log-toolbar label { font-size: 12px; color: var(--text-muted); }
+.log-toolbar select, .log-toolbar input {
+  padding: 4px 8px; background: var(--bg-secondary);
+  border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text-primary); font-size: 12px;
+}
+.log-toolbar select:focus, .log-toolbar input:focus {
+  outline: none; border-color: var(--accent);
+}
+.log-filter-node { min-width: 140px; }
+.log-clear-btn {
+  padding: 4px 10px; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--bg-secondary);
+  color: var(--text-secondary); cursor: pointer; font-size: 12px;
+  margin-left: auto;
+}
+.log-clear-btn:hover { border-color: var(--red); color: var(--red); }
+.log-scroll-indicator { font-size: 11px; color: var(--text-muted); padding: 0 4px; }
+.log-body {
+  flex: 1; overflow-y: auto;
+  font-family: 'Consolas', 'SF Mono', monospace;
+  font-size: 12px; line-height: 1.5;
+  padding: 4px 0; min-height: 0;
+}
+.log-line { padding: 1px 12px; white-space: pre-wrap; word-break: break-all; }
+.log-line:hover { background: rgba(255,255,255,0.02); }
+.log-line .log-time { color: var(--text-muted); margin-right: 8px; }
+.log-line .log-level { margin-right: 8px; font-weight: 600; min-width: 40px; display: inline-block; }
+.log-line .log-node { color: var(--purple); margin-right: 8px; }
+.log-line .log-msg { color: var(--text-primary); }
+.log-line.level-debug { opacity: 0.6; }
+.log-line.level-debug .log-level { color: var(--text-muted); }
+.log-line.level-info .log-level { color: var(--accent); }
+.log-line.level-warn .log-level { color: var(--orange); }
+.log-line.level-warn { background: rgba(255,167,38,0.03); }
+.log-line.level-error .log-level { color: var(--red); }
+.log-line.level-error { background: rgba(255,82,82,0.05); }
+.log-line.level-fatal .log-level { color: var(--red); font-weight: 800; }
+.log-line.level-fatal { background: rgba(255,82,82,0.1); }
 </style>
 </head>
 <body>
@@ -365,7 +472,7 @@ body {
 <!-- Header -->
 <div class="header">
   <div class="header-left">
-    <h1>VLABOR Dashboard</h1>
+    <h1>VLabor Dashboard</h1>
     <span class="profile-badge" id="profileBadge">--</span>
   </div>
   <div class="ws-status">
@@ -379,6 +486,7 @@ body {
   <div class="tab active" data-tab="arms" id="tabArms">Arms</div>
   <div class="tab" data-tab="camera" id="tabCamera">Camera</div>
   <div class="tab" data-tab="recorder" id="tabRecorder">Recorder</div>
+  <div class="tab" data-tab="nodes" id="tabNodes">Nodes</div>
 </div>
 
 <!-- Content -->
@@ -441,6 +549,34 @@ body {
     </div>
   </div>
 
+  <!-- Nodes Tab -->
+  <div class="tab-panel" id="panelNodes">
+    <div class="nodes-layout">
+      <div>
+        <div class="nodes-summary" id="nodesSummary"></div>
+        <div class="nodes-grid" id="nodesGrid"></div>
+      </div>
+      <div class="log-panel">
+        <div class="log-toolbar">
+          <label>Level:</label>
+          <select id="logLevelFilter">
+            <option value="10">DEBUG+</option>
+            <option value="20" selected>INFO+</option>
+            <option value="30">WARN+</option>
+            <option value="40">ERROR+</option>
+          </select>
+          <label>Node:</label>
+          <select id="logNodeFilter" class="log-filter-node">
+            <option value="">All</option>
+          </select>
+          <span class="log-scroll-indicator" id="logScrollIndicator"></span>
+          <button class="log-clear-btn" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="log-body" id="logBody"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -451,7 +587,14 @@ let ws = null;
 let profile = '';
 let armNames = [];
 let cameraNames = [];
+let webuiPorts = {};  // arm -> port マッピング
 let reconnectTimer = null;
+let nodeStatuses = [];
+let logEntries = [];
+let logNodeNames = new Set();
+let selectedNodeFilter = '';
+let logAutoScroll = true;
+const LOG_MAX_DISPLAY = 500;
 
 // ===========================================================================
 // WebSocket
@@ -499,6 +642,7 @@ function handleMessage(msg) {
       profile = msg.profile || '';
       armNames = msg.arms || [];
       cameraNames = msg.cameras || [];
+      webuiPorts = msg.webui_ports || {};
       document.getElementById('profileBadge').textContent = profile || 'default';
       applyProfileLayout();
       buildArmCards();
@@ -511,6 +655,12 @@ function handleMessage(msg) {
       }
       if (msg.recorder_status) {
         updateRecorderPanel(msg.recorder_status);
+      }
+      if (msg.node_status) {
+        updateNodeCards(msg.node_status);
+      }
+      if (msg.log_history) {
+        appendLogs(msg.log_history);
       }
       break;
 
@@ -537,6 +687,18 @@ function handleMessage(msg) {
     case 'recorder_resume_response':
     case 'recorder_cancel_response':
       // status will update via polling
+      break;
+
+    case 'node_status':
+      updateNodeCards(msg.data);
+      break;
+
+    case 'log_batch':
+      appendLogs(msg.logs);
+      break;
+
+    case 'log_history':
+      appendLogs(msg.logs);
       break;
 
     case 'error':
@@ -597,12 +759,15 @@ function buildArmCards() {
     const card = document.createElement('div');
     card.className = 'arm-card';
     card.id = `arm-${arm}`;
+    const port = webuiPorts[arm];
+    const settingsBtn = port
+      ? `<a class="settings-btn" href="http://${location.hostname}:${port}/" target="_blank" title="設定（キャリブレーション等）">⚙</a>`
+      : '';
     card.innerHTML = `
       <div class="arm-header">
         <span class="arm-title">${arm}</span>
         <div class="arm-controls">
-          <button class="ctrl-btn" id="btn-torque-${arm}" onclick="toggleTorque('${arm}')">Torque OFF</button>
-          <button class="ctrl-btn" id="btn-ik-${arm}" onclick="toggleIK('${arm}')">IK OFF</button>
+          ${settingsBtn}
         </div>
       </div>
       <div class="arm-body">
@@ -629,22 +794,6 @@ function buildArmCards() {
 
 function updateArmPanel(arm, data) {
   if (!data) return;
-
-  // Torque button
-  const torqueBtn = document.getElementById(`btn-torque-${arm}`);
-  if (torqueBtn) {
-    const en = data.enabled;
-    torqueBtn.textContent = en ? 'Torque ON' : 'Torque OFF';
-    torqueBtn.className = 'ctrl-btn ' + (en ? 'on' : 'off');
-  }
-
-  // IK button
-  const ikBtn = document.getElementById(`btn-ik-${arm}`);
-  if (ikBtn) {
-    const en = data.ik_enabled;
-    ikBtn.textContent = en ? 'IK ON' : 'IK OFF';
-    ikBtn.className = 'ctrl-btn ' + (en ? 'on' : '');
-  }
 
   // Joint table - prefer feedback, fallback to joint_states
   const jointData = data.joint_feedback || data.joint_states;
@@ -733,18 +882,6 @@ function updateArmPanel(arm, data) {
     }
     streamRow.innerHTML = html;
   }
-}
-
-function toggleTorque(arm) {
-  const btn = document.getElementById(`btn-torque-${arm}`);
-  const current = btn.classList.contains('on');
-  send({ type: 'set_torque', arm: arm, enabled: !current });
-}
-
-function toggleIK(arm) {
-  const btn = document.getElementById(`btn-ik-${arm}`);
-  const current = btn.classList.contains('on');
-  send({ type: 'set_ik', arm: arm, enabled: !current });
 }
 
 // ===========================================================================
@@ -847,6 +984,195 @@ function updateRecorderPanel(data) {
     typeof duration === 'number' ? duration.toFixed(1) + 's' : duration;
   document.getElementById('recDatasetTotal').textContent = total;
 }
+
+// ===========================================================================
+// Nodes
+// ===========================================================================
+const LEVEL_NAMES = {10: 'DEBUG', 20: 'INFO', 30: 'WARN', 40: 'ERROR', 50: 'FATAL'};
+const LEVEL_CLASSES = {10: 'debug', 20: 'info', 30: 'warn', 40: 'error', 50: 'fatal'};
+
+function updateNodeCards(data) {
+  nodeStatuses = data || [];
+  const grid = document.getElementById('nodesGrid');
+  const summary = document.getElementById('nodesSummary');
+  if (!grid) return;
+
+  const total = nodeStatuses.length;
+  const running = nodeStatuses.filter(n => n.running).length;
+  const stopped = total - running;
+  const cls = stopped === 0 ? 'all-ok' : 'has-down';
+  summary.innerHTML = `
+    <span class="stat ${cls}"><b>${running}/${total}</b> nodes running</span>
+    ${stopped > 0 ? `<span class="stat has-down"><b>${stopped}</b> stopped</span>` : ''}
+  `;
+
+  if (grid.children.length !== nodeStatuses.length) {
+    grid.innerHTML = '';
+    for (const node of nodeStatuses) {
+      const card = document.createElement('div');
+      card.className = 'node-card';
+      card.dataset.nodeKey = node.key;
+      card.onclick = () => toggleNodeFilter(node.name);
+      card.innerHTML = `
+        <div class="node-dot ${node.running ? 'running' : 'stopped'}"></div>
+        <div class="node-info">
+          <div class="node-name">${escapeHtml(node.name)}</div>
+          <div class="node-ns">${escapeHtml(node.namespace)}</div>
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+  } else {
+    for (let i = 0; i < nodeStatuses.length; i++) {
+      const card = grid.children[i];
+      const dot = card.querySelector('.node-dot');
+      if (dot) {
+        dot.className = 'node-dot ' + (nodeStatuses[i].running ? 'running' : 'stopped');
+      }
+    }
+  }
+  updateNodeCardSelection();
+}
+
+function toggleNodeFilter(nodeName) {
+  const filterSelect = document.getElementById('logNodeFilter');
+  if (selectedNodeFilter === nodeName) {
+    selectedNodeFilter = '';
+    filterSelect.value = '';
+  } else {
+    selectedNodeFilter = nodeName;
+    if ([...filterSelect.options].some(o => o.value === nodeName)) {
+      filterSelect.value = nodeName;
+    }
+  }
+  updateNodeCardSelection();
+  renderFilteredLogs();
+}
+
+function updateNodeCardSelection() {
+  document.querySelectorAll('.node-card').forEach(card => {
+    const name = card.querySelector('.node-name')?.textContent;
+    card.classList.toggle('selected', name === selectedNodeFilter);
+  });
+}
+
+// ===========================================================================
+// Logs
+// ===========================================================================
+function appendLogs(logs) {
+  if (!logs || logs.length === 0) return;
+  for (const log of logs) {
+    logEntries.push(log);
+    if (log.name && !logNodeNames.has(log.name)) {
+      logNodeNames.add(log.name);
+      updateLogNodeFilter();
+    }
+  }
+  while (logEntries.length > LOG_MAX_DISPLAY) {
+    logEntries.shift();
+  }
+  renderFilteredLogs();
+}
+
+function updateLogNodeFilter() {
+  const select = document.getElementById('logNodeFilter');
+  const current = select.value;
+  const sorted = [...logNodeNames].sort();
+  select.innerHTML = '<option value="">All</option>';
+  for (const name of sorted) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  }
+  select.value = current || selectedNodeFilter || '';
+}
+
+function renderFilteredLogs() {
+  const logBody = document.getElementById('logBody');
+  if (!logBody) return;
+
+  const levelFilter = parseInt(document.getElementById('logLevelFilter').value) || 20;
+  const nodeFilter = document.getElementById('logNodeFilter').value || selectedNodeFilter || '';
+
+  const filtered = logEntries.filter(log => {
+    if (log.level < levelFilter) return false;
+    if (nodeFilter && log.name !== nodeFilter) return false;
+    return true;
+  });
+
+  const fragment = document.createDocumentFragment();
+  for (const log of filtered) {
+    const div = document.createElement('div');
+    const levelName = LEVEL_NAMES[log.level] || 'UNKNOWN';
+    const levelClass = LEVEL_CLASSES[log.level] || 'info';
+    div.className = `log-line level-${levelClass}`;
+    const time = formatLogTime(log.stamp);
+    div.innerHTML =
+      `<span class="log-time">${time}</span>` +
+      `<span class="log-level">${levelName}</span>` +
+      `<span class="log-node">[${escapeHtml(log.name)}]</span>` +
+      `<span class="log-msg">${escapeHtml(log.msg)}</span>`;
+    fragment.appendChild(div);
+  }
+
+  logBody.innerHTML = '';
+  logBody.appendChild(fragment);
+
+  if (logAutoScroll) {
+    logBody.scrollTop = logBody.scrollHeight;
+  }
+  const indicator = document.getElementById('logScrollIndicator');
+  if (indicator) {
+    indicator.textContent = logAutoScroll ? '' : '(scroll paused)';
+  }
+}
+
+function formatLogTime(stampSec) {
+  if (!stampSec) return '--:--:--';
+  const d = new Date(stampSec * 1000);
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  const ms = String(d.getMilliseconds()).padStart(3, '0');
+  return `${h}:${m}:${s}.${ms}`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function clearLogs() {
+  logEntries = [];
+  const logBody = document.getElementById('logBody');
+  if (logBody) logBody.innerHTML = '';
+}
+
+// ログビューアの自動スクロール制御
+document.addEventListener('DOMContentLoaded', () => {
+  const logBody = document.getElementById('logBody');
+  if (logBody) {
+    logBody.addEventListener('scroll', () => {
+      const atBottom = logBody.scrollHeight - logBody.scrollTop - logBody.clientHeight < 30;
+      logAutoScroll = atBottom;
+      const indicator = document.getElementById('logScrollIndicator');
+      if (indicator) {
+        indicator.textContent = logAutoScroll ? '' : '(scroll paused)';
+      }
+    });
+  }
+});
+
+// フィルタ変更イベント
+document.getElementById('logLevelFilter')?.addEventListener('change', () => {
+  renderFilteredLogs();
+});
+document.getElementById('logNodeFilter')?.addEventListener('change', (e) => {
+  selectedNodeFilter = e.target.value;
+  updateNodeCardSelection();
+  renderFilteredLogs();
+});
 
 // ===========================================================================
 // Init

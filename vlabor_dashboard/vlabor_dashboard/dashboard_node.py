@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-VLABOR Dashboard Node
-プロファイル対応の統合ダッシュボード (サーボ情報、カメラ、レコーダー制御)
+VLabor Dashboard Node
+プロファイル対応の統合ダッシュボード (サーボ情報、カメラ、レコーダー制御、ノード監視、ログ)
 
 aiohttp + WebSocket + ROS2
 """
@@ -13,6 +13,7 @@ import json
 import math
 import threading
 import time
+from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -23,6 +24,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import JointState, Image
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool, String
+from rcl_interfaces.msg import Log
 
 try:
     from ament_index_python.packages import get_package_share_directory
@@ -87,6 +89,98 @@ class CameraData:
         self.frame_count: int = 0
 
 
+class NodeStatusData:
+    """ノードステータスデータ"""
+
+    def __init__(self, name: str, namespace: str):
+        self.name = name
+        self.namespace = namespace
+        self.running: bool = False
+        self.last_seen: Optional[float] = None
+
+
+class LogEntry:
+    """ログエントリ"""
+
+    def __init__(self, stamp_sec: float, level: int, name: str,
+                 msg: str, file: str, function: str, line: int):
+        self.stamp_sec = stamp_sec
+        self.level = level
+        self.name = name
+        self.msg = msg
+        self.file = file
+        self.function = function
+        self.line = line
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'stamp': self.stamp_sec,
+            'level': self.level,
+            'name': self.name,
+            'msg': self.msg,
+            'file': self.file,
+            'function': self.function,
+            'line': self.line,
+        }
+
+
+# ---------------------------------------------------------------------------
+# プロファイル別の期待ノード一覧
+# (ノード名, 名前空間) のリスト
+# ---------------------------------------------------------------------------
+
+EXPECTED_NODES_BY_PROFILE: Dict[str, List[Dict[str, str]]] = {
+    'so101_vr_dual_teleop': [
+        {'name': 'ros_tcp_endpoint', 'ns': '/'},
+        {'name': 'vr_dual_arm_control_node', 'ns': '/'},
+        {'name': 'left_arm_ik_solver_node', 'ns': '/'},
+        {'name': 'right_arm_ik_solver_node', 'ns': '/'},
+        {'name': 'so101_control_node', 'ns': '/left_arm'},
+        {'name': 'so101_control_node', 'ns': '/right_arm'},
+        {'name': 'robot_state_publisher', 'ns': '/left_arm'},
+        {'name': 'robot_state_publisher', 'ns': '/right_arm'},
+        {'name': 'so101_webui_left', 'ns': '/'},
+        {'name': 'so101_webui_right', 'ns': '/'},
+        {'name': 'vlabor_dashboard', 'ns': '/'},
+        {'name': 'overhead_camera', 'ns': '/'},
+        {'name': 'episode_recorder', 'ns': '/'},
+    ],
+    'so101_dual_teleop': [
+        {'name': 'joint_state_mirror_dual', 'ns': '/'},
+        {'name': 'vr_dual_arm_control_node', 'ns': '/'},
+        {'name': 'left_arm_ik_solver_node', 'ns': '/'},
+        {'name': 'right_arm_ik_solver_node', 'ns': '/'},
+        {'name': 'so101_control_node', 'ns': '/left_arm'},
+        {'name': 'so101_control_node', 'ns': '/right_arm'},
+        {'name': 'robot_state_publisher', 'ns': '/left_arm'},
+        {'name': 'robot_state_publisher', 'ns': '/right_arm'},
+        {'name': 'so101_webui_left', 'ns': '/'},
+        {'name': 'so101_webui_right', 'ns': '/'},
+        {'name': 'vlabor_dashboard', 'ns': '/'},
+        {'name': 'overhead_camera', 'ns': '/'},
+        {'name': 'episode_recorder', 'ns': '/'},
+    ],
+    'so101_single_teleop': [
+        {'name': 'joint_state_mirror_single', 'ns': '/'},
+        {'name': 'so101_control_node', 'ns': '/left_arm'},
+        {'name': 'so101_control_node', 'ns': '/right_arm'},
+        {'name': 'robot_state_publisher', 'ns': '/left_arm'},
+        {'name': 'robot_state_publisher', 'ns': '/right_arm'},
+        {'name': 'so101_webui_left', 'ns': '/'},
+        {'name': 'vlabor_dashboard', 'ns': '/'},
+        {'name': 'overhead_camera', 'ns': '/'},
+        {'name': 'episode_recorder', 'ns': '/'},
+    ],
+    'vr_server_only': [
+        {'name': 'ros_tcp_endpoint', 'ns': '/'},
+    ],
+    'overhead_camera': [
+        {'name': 'overhead_camera', 'ns': '/'},
+        {'name': 'vlabor_dashboard', 'ns': '/'},
+    ],
+}
+
+
 # ---------------------------------------------------------------------------
 # Dashboard Node
 # ---------------------------------------------------------------------------
@@ -104,6 +198,7 @@ class VlaborDashboardNode(Node):
         self.declare_parameter('camera_topics', ['/overhead_camera/image_raw'])
         self.declare_parameter('camera_names', ['overhead_camera'])
         self.declare_parameter('recorder_api_url', 'http://localhost:8082/api')
+        self.declare_parameter('webui_ports', [0])
         self.declare_parameter('image_quality', 50)
         self.declare_parameter('image_max_fps', 5)
 
@@ -116,6 +211,15 @@ class VlaborDashboardNode(Node):
         self.recorder_api_url = self.get_parameter('recorder_api_url').value
         self.image_quality = self.get_parameter('image_quality').value
         self.image_max_fps = self.get_parameter('image_max_fps').value
+
+        # アームごとの WebUI ポートマッピング
+        webui_ports_raw = list(self.get_parameter('webui_ports').value)
+        self.webui_port_map: Dict[str, int] = {}
+        for i, ns in enumerate(self.arm_namespaces):
+            if i < len(webui_ports_raw):
+                port = int(webui_ports_raw[i])
+                if port > 0:
+                    self.webui_port_map[ns] = port
 
         self.rate_alpha = 0.3
         self.min_frame_interval = 1.0 / max(self.image_max_fps, 1)
@@ -146,12 +250,35 @@ class VlaborDashboardNode(Node):
         self._last_recorder_poll: float = 0.0
         self._recorder_status: Optional[Dict] = None
 
-        self.get_logger().info(f'VLABOR Dashboard initialized')
+        # --- ノード監視 ---
+        # 期待ノードリストの構築
+        self.expected_nodes = EXPECTED_NODES_BY_PROFILE.get(self.profile, [])
+
+        # ノードステータスデータ
+        self.node_statuses: Dict[str, NodeStatusData] = {}
+        for node_info in self.expected_nodes:
+            key = f"{node_info['ns']}/{node_info['name']}".replace('//', '/')
+            self.node_statuses[key] = NodeStatusData(
+                node_info['name'], node_info['ns'])
+
+        # ログバッファ
+        self.log_buffer: deque = deque(maxlen=500)
+        self.log_pending: List[Dict] = []
+        self.log_lock = threading.Lock()
+
+        # /rosout 購読
+        self.create_subscription(Log, '/rosout', self._on_rosout, 50)
+
+        # ノードディスカバリタイマー (2秒間隔)
+        self.create_timer(2.0, self._poll_node_status)
+
+        self.get_logger().info(f'VLabor Dashboard initialized')
         self.get_logger().info(f'  Profile: {self.profile}')
         self.get_logger().info(f'  Port: {self.web_port}')
         self.get_logger().info(f'  Arms: {self.arm_namespaces}')
         self.get_logger().info(f'  Cameras: {list(self.cameras.keys())}')
         self.get_logger().info(f'  Recorder API: {self.recorder_api_url}')
+        self.get_logger().info(f'  Expected nodes: {len(self.expected_nodes)}')
 
     # ------------------------------------------------------------------
     # ROS2 Subscriptions
@@ -357,6 +484,78 @@ class VlaborDashboardNode(Node):
             self.get_logger().warning(f'Camera {name} frame error: {e}')
 
     # ------------------------------------------------------------------
+    # Node Monitoring
+    # ------------------------------------------------------------------
+
+    def _on_rosout(self, msg: Log):
+        """ログメッセージ受信コールバック"""
+        stamp_sec = msg.stamp.sec + msg.stamp.nanosec / 1e9
+        entry = LogEntry(
+            stamp_sec=stamp_sec,
+            level=msg.level,
+            name=msg.name,
+            msg=msg.msg,
+            file=msg.file,
+            function=msg.function,
+            line=msg.line,
+        )
+        self.log_buffer.append(entry)
+        with self.log_lock:
+            self.log_pending.append(entry.to_dict())
+
+    def _poll_node_status(self):
+        """ノードの存在をポーリングで確認"""
+        try:
+            discovered = self.get_node_names_and_namespaces()
+        except Exception:
+            return
+
+        # 検出されたノードをセットに変換
+        running_set = set()
+        for name, ns in discovered:
+            full_name = f"{ns}/{name}".replace('//', '/')
+            running_set.add(full_name)
+
+        now = self._now_sec()
+        for key, status in self.node_statuses.items():
+            status.running = key in running_set
+            if status.running:
+                status.last_seen = now
+
+        self._broadcast_node_status()
+
+    def _broadcast_node_status(self):
+        """ノードステータスをブロードキャスト"""
+        if self.loop is None or not self.ws_clients:
+            return
+        now = time.time()
+        last = self._last_broadcast.get('_node_status', 0)
+        if now - last < 1.0:
+            return
+        self._last_broadcast['_node_status'] = now
+
+        try:
+            data = self._get_node_status_data()
+            payload = json.dumps({'type': 'node_status', 'data': data})
+            asyncio.run_coroutine_threadsafe(
+                self._broadcast_ws(payload), self.loop)
+        except Exception as e:
+            self.get_logger().warning(f'Broadcast node status failed: {e}')
+
+    def _get_node_status_data(self) -> List[Dict]:
+        """ノードステータスを辞書リストで返す"""
+        result = []
+        for key, status in self.node_statuses.items():
+            result.append({
+                'key': key,
+                'name': status.name,
+                'namespace': status.namespace,
+                'running': status.running,
+                'last_seen': status.last_seen,
+            })
+        return result
+
+    # ------------------------------------------------------------------
     # Control Publishers
     # ------------------------------------------------------------------
 
@@ -505,6 +704,8 @@ class VlaborDashboardNode(Node):
 
             # レコーダーポーリングタスク
             self.loop.create_task(self._recorder_poll_loop())
+            # ログフラッシュタスク
+            self.loop.create_task(self._log_flush_loop())
 
             self.loop.run_forever()
 
@@ -520,6 +721,23 @@ class VlaborDashboardNode(Node):
                     await self._poll_recorder_status()
                 except Exception:
                     pass
+
+    async def _log_flush_loop(self):
+        """未送信のログを定期的にフラッシュ"""
+        while True:
+            await asyncio.sleep(0.2)
+            if not self.ws_clients:
+                continue
+            with self.log_lock:
+                if not self.log_pending:
+                    continue
+                batch = self.log_pending[:]
+                self.log_pending.clear()
+            try:
+                payload = json.dumps({'type': 'log_batch', 'logs': batch})
+                await self._broadcast_ws(payload)
+            except Exception:
+                pass
 
     def _get_web_dir(self) -> str:
         if HAS_AMENT:
@@ -552,8 +770,11 @@ class VlaborDashboardNode(Node):
             'profile': self.profile,
             'arms': self.arm_namespaces,
             'cameras': list(self.cameras.keys()),
+            'webui_ports': self.webui_port_map,
             'data': {arm: self._get_arm_status(arm) for arm in self.arm_namespaces},
             'recorder_status': self._recorder_status,
+            'node_status': self._get_node_status_data(),
+            'log_history': [e.to_dict() for e in self.log_buffer],
         }
         await ws.send_str(json.dumps(init_data))
 
@@ -629,6 +850,16 @@ class VlaborDashboardNode(Node):
             elif msg_type == 'recorder_dataset_info':
                 result = await self._recorder_request('GET', '/dataset/info')
                 await ws.send_str(json.dumps({'type': 'recorder_dataset_info', 'data': result}))
+
+            elif msg_type == 'get_node_status':
+                data = self._get_node_status_data()
+                await ws.send_str(json.dumps(
+                    {'type': 'node_status', 'data': data}))
+
+            elif msg_type == 'get_log_history':
+                logs = [e.to_dict() for e in self.log_buffer]
+                await ws.send_str(json.dumps(
+                    {'type': 'log_history', 'logs': logs}))
 
         except json.JSONDecodeError:
             await ws.send_str(json.dumps({'type': 'error', 'message': 'Invalid JSON'}))
