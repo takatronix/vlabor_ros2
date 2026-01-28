@@ -71,7 +71,7 @@ ros2 launch vlabor_launch vlabor.launch.py profile:=so101_dual_teleop \\
 
 ## LeRobot Recorderの設定
 LeRobot録画は `lerobot_recorder` のpreset/configを使う。
-profileから `episode_recorder.launch.py` をincludeして指定する。
+profileから `lerobot_recorder.launch.py` をincludeして指定する。
 
 例 (preset):
 ```yaml
@@ -79,7 +79,7 @@ profileから `episode_recorder.launch.py` をincludeして指定する。
     actions:
       - type: include
         package: lerobot_recorder
-        launch: episode_recorder.launch.py
+        launch: lerobot_recorder.launch.py
         args:
           preset: so101_dual_vr
 ```
@@ -90,7 +90,7 @@ profileから `episode_recorder.launch.py` をincludeして指定する。
     actions:
       - type: include
         package: lerobot_recorder
-        launch: episode_recorder.launch.py
+        launch: lerobot_recorder.launch.py
         args:
           config_file: /path/to/config.yaml
 ```

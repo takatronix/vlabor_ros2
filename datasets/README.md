@@ -32,7 +32,7 @@ datasets/
 例（config_file で指定）:
 
 ```yaml
-episode_recorder:
+lerobot_recorder:
   ros__parameters:
     output_dir: "/home/ros2/ros2_ws/src/vlabor_ros2/datasets"
     default_dataset_name: "so101_dual_vr"
@@ -42,7 +42,7 @@ episode_recorder:
 あるいはプリセット `so101_dual_vr_shared` を使用:
 
 ```bash
-ros2 launch lerobot_recorder episode_recorder.launch.py preset:=so101_dual_vr_shared
+ros2 launch lerobot_recorder lerobot_recorder.launch.py preset:=so101_dual_vr_shared
 ```
 
 ## 運用

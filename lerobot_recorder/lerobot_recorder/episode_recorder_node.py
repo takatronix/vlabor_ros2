@@ -56,7 +56,7 @@ class EpisodeRecorderNode(Node):
     """
 
     def __init__(self):
-        super().__init__('episode_recorder_node')
+        super().__init__('lerobot_recorder_node')
         self.get_logger().info('Episode Recorder Node starting...')
 
         # Declare parameters

@@ -606,7 +606,7 @@ body {
 <!-- Tabs -->
 <div class="tabs" id="tabBar">
   <div class="tab active" data-tab="arms" id="tabArms">Arms</div>
-  <div class="tab" data-tab="camera" id="tabCamera">Camera</div>
+  <div class="tab" data-tab="camera" id="tabCamera">Cameras</div>
   <div class="tab" data-tab="recorder" id="tabRecorder">Recorder</div>
   <div class="tab" data-tab="devices" id="tabDevices">Devices</div>
   <div class="tab" data-tab="nodes" id="tabNodes">Nodes</div>
@@ -772,11 +772,16 @@ function connect() {
 
   ws.onerror = () => {};
 
+  ws.binaryType = 'arraybuffer';
   ws.onmessage = (e) => {
-    try {
-      const msg = JSON.parse(e.data);
-      handleMessage(msg);
-    } catch {}
+    if (e.data instanceof ArrayBuffer) {
+      handleBinaryMessage(e.data);
+    } else {
+      try {
+        const msg = JSON.parse(e.data);
+        handleMessage(msg);
+      } catch {}
+    }
   };
 }
 
@@ -1096,7 +1101,42 @@ function buildCameraCards() {
 }
 
 let cameraFrameCount = {};
+let cameraBlobUrls = {};  // カメラ名 → 前回の Blob URL（メモリ解放用）
+
+function handleBinaryMessage(buffer) {
+  const view = new Uint8Array(buffer);
+  if (view.length < 3) return;
+  const msgType = view[0];
+  if (msgType === 0x01) {
+    // カメラフレーム: [0x01][nameLen][name...][jpegData...]
+    const nameLen = view[1];
+    const name = new TextDecoder().decode(view.slice(2, 2 + nameLen));
+    const jpegData = view.slice(2 + nameLen);
+    const blob = new Blob([jpegData], { type: 'image/jpeg' });
+    updateCameraFrameBlob(name, blob);
+  }
+}
+
+function updateCameraFrameBlob(cam, blob) {
+  const img = document.getElementById(`cam-img-${cam}`);
+  const nosig = document.getElementById(`cam-nosignal-${cam}`);
+  const frames = document.getElementById(`cam-frames-${cam}`);
+  if (!img) return;
+
+  // 前回の Blob URL を解放
+  if (cameraBlobUrls[cam]) URL.revokeObjectURL(cameraBlobUrls[cam]);
+  const url = URL.createObjectURL(blob);
+  cameraBlobUrls[cam] = url;
+  img.src = url;
+  img.style.display = 'block';
+  if (nosig) nosig.style.display = 'none';
+
+  cameraFrameCount[cam] = (cameraFrameCount[cam] || 0) + 1;
+  if (frames) frames.textContent = `Frames: ${cameraFrameCount[cam]}`;
+}
+
 function updateCameraFrame(cam, b64data, width, height) {
+  // JSON フォールバック用（従来互換）
   const img = document.getElementById(`cam-img-${cam}`);
   const nosig = document.getElementById(`cam-nosignal-${cam}`);
   const res = document.getElementById(`cam-res-${cam}`);

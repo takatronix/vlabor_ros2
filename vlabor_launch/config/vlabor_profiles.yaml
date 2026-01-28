@@ -19,6 +19,9 @@ defaults:
   rviz_vr_config: "${share:so101_description}/rviz/vr_teleop.rviz"
   gazebo_args: ""
   overhead_camera_config: "${share:vlabor_launch}/config/overhead_camera_c920.yaml"
+  d405_enabled: true
+  d405_config: "${share:vlabor_launch}/config/realsense_d405_vlabor.yaml"
+  d405_node_name: "side_camera"
   mirror_single_config: "${share:vlabor_launch}/config/copy_map_single.yaml"
   mirror_dual_config: "${share:vlabor_launch}/config/copy_map_dual.yaml"
   fluent_vision_config: "/config/fluent_vision_system.yaml"

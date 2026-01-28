@@ -589,10 +589,10 @@ episode_meta = {
 
 ## 設定ファイル
 
-### VRテレオペ用 (`episode_recorder_vr.yaml`)
+### VRテレオペ用 (`lerobot_recorder_vr.yaml`)
 
 ```yaml
-episode_recorder:
+lerobot_recorder:
   ros__parameters:
     # === 保存先設定 ===
     output_dir: "~/lerobot_datasets"      # 変更する場合はここ
@@ -634,10 +634,10 @@ episode_recorder:
     web_port: 8082
 ```
 
-### リーダーテレオペ用 (`episode_recorder_leader.yaml`)
+### リーダーテレオペ用 (`lerobot_recorder_leader.yaml`)
 
 ```yaml
-episode_recorder:
+lerobot_recorder:
   ros__parameters:
     output_dir: "~/lerobot_datasets"
     default_dataset_name: "so101_leader_teleop"
@@ -675,18 +675,18 @@ episode_recorder:
 vlabor_ros2/
 └── unity_robot_control/
     ├── unity_robot_control/
-    │   ├── episode_recorder/
+    │   ├── lerobot_recorder/
     │   │   ├── __init__.py
-    │   │   ├── episode_recorder_node.py  # メインノード
+    │   │   ├── lerobot_recorder_node.py  # メインノード
     │   │   ├── frame_buffer.py           # フレーム同期・バッファ
     │   │   ├── lerobot_writer.py         # Parquet/メタデータ書き込み
     │   │   └── video_encoder.py          # PNG→MP4変換
     │   └── ...
     ├── config/
-    │   ├── episode_recorder_vr.yaml
-    │   └── episode_recorder_leader.yaml
+    │   ├── lerobot_recorder_vr.yaml
+    │   └── lerobot_recorder_leader.yaml
     ├── launch/
-    │   └── episode_recorder.launch.py
+    │   └── lerobot_recorder.launch.py
     └── setup.py  # エントリポイント追加
 ```
 
@@ -781,12 +781,12 @@ def encode_video(image_dir: Path, output_path: Path, fps: int):
 
 ```bash
 # VRテレオペ用
-ros2 launch unity_robot_control episode_recorder.launch.py \
-    config:=episode_recorder_vr.yaml
+ros2 launch unity_robot_control lerobot_recorder.launch.py \
+    config:=lerobot_recorder_vr.yaml
 
 # リーダーテレオペ用
-ros2 launch unity_robot_control episode_recorder.launch.py \
-    config:=episode_recorder_leader.yaml
+ros2 launch unity_robot_control lerobot_recorder.launch.py \
+    config:=lerobot_recorder_leader.yaml
 ```
 
 ### 上位システムからの呼び出し例（Python）

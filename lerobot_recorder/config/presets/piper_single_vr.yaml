@@ -1,5 +1,5 @@
 # Piper Single Arm + VR Teleop Preset
-episode_recorder:
+lerobot_recorder:
   ros__parameters:
     # Storage
     output_dir: "/home/ros2/ros2_ws/src/vlabor_ros2/datasets"
@@ -24,7 +24,7 @@ episode_recorder:
     camera_0_width: 640
     camera_0_height: 480
     camera_1_name: "cam_wrist"
-    camera_1_topic: "/piper/wrist_camera/image_raw"
+    camera_1_topic: "/piper/side_camera/image_raw"
     camera_1_width: 320
     camera_1_height: 240
 

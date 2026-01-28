@@ -18,8 +18,15 @@ profile:
         node_name: overhead_camera
         config_file: ${overhead_camera_config}
     - type: include
+      package: fv_realsense
+      launch: fv_realsense_launch.py
+      args:
+        node_name: ${d405_node_name}
+        config_file: ${d405_config}
+      enabled: ${d405_enabled}
+    - type: include
       package: lerobot_recorder
-      launch: episode_recorder.launch.py
+      launch: lerobot_recorder.launch.py
       args:
         preset: so101_single_vr
     - type: node
@@ -88,8 +95,8 @@ profile:
         profile: so101_single_teleop
         arm_namespaces: [left_arm]
         webui_ports: ["${left_webui_port}"]
-        camera_topics: [/overhead_camera/image_raw]
-        camera_names: [overhead_camera]
+        camera_topics: ["/overhead_camera/image_raw/compressed", "/${d405_node_name}/color/image_raw/compressed"]
+        camera_names: ["overhead_camera", "side_camera"]
     - type: include
       package: foxglove_bridge
       launch: foxglove_bridge_launch.xml

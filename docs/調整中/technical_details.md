@@ -276,7 +276,7 @@ cameras:
 
 ---
 
-### 2.7 episode_recorder_node (データ収集)
+### 2.7 lerobot_recorder_node (データ収集)
 
 **役割:** テレオペ中のデータを **直接 LeRobot Dataset 形式** で保存
 
@@ -287,7 +287,7 @@ flowchart LR
         Img["/image_raw"]
     end
 
-    subgraph Recorder["episode_recorder_node"]
+    subgraph Recorder["lerobot_recorder_node"]
         Sync["時刻同期"]
         Encode["MP4エンコード"]
         Save["Parquet保存"]
@@ -339,7 +339,7 @@ lerobot_dataset/
 | follower_ros2_node | *_ros2_bridge | フォロワーアーム制御 |
 | usb_cam_node | usb_cam | USBカメラ配信 |
 | realsense2_camera_node | realsense2_camera | RealSenseカメラ配信 |
-| episode_recorder_node | unity_robot_control | データ記録 |
+| lerobot_recorder_node | unity_robot_control | データ記録 |
 | policy_runner_node | *_ros2_bridge | 推論実行 |
 
 ---
@@ -409,7 +409,7 @@ flowchart TB
     end
 
     subgraph Data["データ収集"]
-        Recorder["episode_recorder_node<br/>─────────<br/>関節+映像を記録"]
+        Recorder["lerobot_recorder_node<br/>─────────<br/>関節+映像を記録"]
     end
 
     subgraph Inference["推論"]
@@ -464,7 +464,7 @@ flowchart TB
 | **follower_ros2_node** | フォロワーアームに指令を送る（追従用） |
 | **usb_cam_node** | USBカメラの映像を配信 |
 | **realsense2_camera_node** | RealSenseカメラの映像を配信 |
-| **episode_recorder_node** | テレオペ中の関節角度＋映像を記録 |
+| **lerobot_recorder_node** | テレオペ中の関節角度＋映像を記録 |
 | **policy_runner_node** | 学習済みモデルでロボットを自律制御 |
 
 ---
@@ -544,7 +544,7 @@ ros2 run unity_robot_control ik_solver_node --ros-args \
 ros2 launch so101_ros2_bridge dual_arm.launch.py
 
 # 5. データ記録開始
-ros2 run unity_robot_control episode_recorder_node
+ros2 run unity_robot_control lerobot_recorder_node
 ros2 service call /episode/start std_srvs/srv/Trigger
 ```
 

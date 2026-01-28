@@ -16,5 +16,5 @@ profile:
         web_port: ${dashboard_port}
         profile: overhead_camera
         arm_namespaces: []
-        camera_topics: [/overhead_camera/image_raw]
+        camera_topics: [/overhead_camera/image_raw/compressed]
         camera_names: [overhead_camera]

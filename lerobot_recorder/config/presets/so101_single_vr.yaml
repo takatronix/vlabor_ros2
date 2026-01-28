@@ -1,5 +1,5 @@
 # SO101 Single Arm + VR Teleop Preset
-episode_recorder:
+lerobot_recorder:
   ros__parameters:
     # Storage
     output_dir: "/home/ros2/ros2_ws/src/vlabor_ros2/datasets"

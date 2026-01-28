@@ -24,7 +24,7 @@ flowchart TB
         VRCtrl["vr_dual_arm_control_node"]
         IKL["left_arm_ik_solver"]
         IKR["right_arm_ik_solver"]
-        Recorder["episode_recorder_node"]
+        Recorder["lerobot_recorder_node"]
         Runner["policy_runner_node"]
     end
 
@@ -93,7 +93,7 @@ flowchart TB
 | **right_arm_ik_solver** | 右アーム逆運動学（KDL） |
 | **leader_ros2_node** | 左アーム制御ドライバー |
 | **follower_ros2_node** | 右アーム制御ドライバー |
-| **episode_recorder_node** | エピソード記録（ROS2 Bag） |
+| **lerobot_recorder_node** | エピソード記録（ROS2 Bag） |
 | **policy_runner_node** | 学習済みモデル推論 |
 
 ### LeRobot連携
@@ -216,7 +216,7 @@ flowchart LR
         VR1["🥽 VRテレオペ"]
         Robot1["🦾 双腕ロボット"]
         Cam1["📷 カメラ"]
-        Rec["episode_recorder_node"]
+        Rec["lerobot_recorder_node"]
         Bag[("ROS2 Bags<br/>episode_000000/<br/>episode_000001/")]
 
         VR1 --> Rec
@@ -509,7 +509,7 @@ sequenceDiagram
 | **ROS2ノード** | vr_dual_arm_control_node | VR入力→左右アームマッピング |
 | **ROS2ノード** | left_arm_ik_solver_node | 左アームIK計算（KDL） |
 | **ROS2ノード** | right_arm_ik_solver_node | 右アームIK計算（KDL） |
-| **ROS2ノード** | episode_recorder_node | エピソード記録管理 |
+| **ROS2ノード** | lerobot_recorder_node | エピソード記録管理 |
 | **ROS2ノード** | policy_runner_node | 学習済みモデル推論 |
 | **ブリッジ** | leader_ros2_node | 左アーム制御（LeRobot API） |
 | **ブリッジ** | follower_ros2_node | 右アーム制御（LeRobot API） |
@@ -567,7 +567,7 @@ sequenceDiagram
 ros2 launch unity_robot_control vr_dual_arm_teleop.launch.py
 
 # 2. エピソード記録ノード起動
-ros2 run unity_robot_control episode_recorder_node
+ros2 run unity_robot_control lerobot_recorder_node
 
 # 3. 記録開始/停止
 ros2 service call /episode/start std_srvs/srv/Trigger

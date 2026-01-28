@@ -37,7 +37,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'episode_recorder_node = lerobot_recorder.episode_recorder_node:main',
+            'lerobot_recorder_node = lerobot_recorder.episode_recorder_node:main',
         ],
     },
 )

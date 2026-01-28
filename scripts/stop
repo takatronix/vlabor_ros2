@@ -110,6 +110,8 @@ NODES=(
     "joint_state_mirror_node"
     "vlabor_dashboard"
     "vlabor_dashboard_node"
+    "lerobot_recorder"
+    "lerobot_recorder_node"
     "rviz2"
     "rqt_gui_cpp_node"
 )

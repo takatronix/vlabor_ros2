@@ -21,11 +21,11 @@ WebAPIを通じて録画の開始・停止・一時停止を制御できます�
 
 ```bash
 # デフォルト（so101_dual_vr）
-ros2 launch lerobot_recorder episode_recorder.launch.py
+ros2 launch lerobot_recorder lerobot_recorder.launch.py
 
 # プリセット指定
-ros2 launch lerobot_recorder episode_recorder.launch.py preset:=so101_single_vr
-ros2 launch lerobot_recorder episode_recorder.launch.py preset:=piper_single_vr
+ros2 launch lerobot_recorder lerobot_recorder.launch.py preset:=so101_single_vr
+ros2 launch lerobot_recorder lerobot_recorder.launch.py preset:=piper_single_vr
 ```
 
 ### WebAPI
@@ -80,4 +80,4 @@ LeRobot v3形式で以下のファイルを生成:
 
 ## 詳細設計
 
-[docs/episode_recorder_design.md](docs/episode_recorder_design.md) を参照
+[docs/episode_recorder_design.md](docs/episode_recorder_design.md) (旧名称のまま) を参照

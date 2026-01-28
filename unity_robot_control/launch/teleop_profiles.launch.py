@@ -181,6 +181,15 @@ def _launch_setup(context, *args, **kwargs):
     if isinstance(profile_vars, dict):
         variables = {**variables, **profile_vars}
 
+    # CLI override: 非空の LaunchConfiguration で YAML defaults を上書き
+    for key in list(variables.keys()):
+        try:
+            cli_val = LaunchConfiguration(key).perform(context)
+            if cli_val is not None and str(cli_val).strip() != '':
+                variables[key] = cli_val
+        except Exception:
+            pass
+
     actions = []
     for entry in profile.get('actions', []):
         enabled = _resolve_value(context, entry.get('enabled', True), variables)
@@ -238,5 +247,8 @@ def generate_launch_description():
         DeclareLaunchArgument('mirror_single_config', default_value=''),
         DeclareLaunchArgument('mirror_dual_config', default_value=''),
         DeclareLaunchArgument('dashboard_port', default_value='8888'),
+        DeclareLaunchArgument('d405_enabled', default_value=''),
+        DeclareLaunchArgument('d405_config', default_value=''),
+        DeclareLaunchArgument('d405_node_name', default_value=''),
         OpaqueFunction(function=_launch_setup),
     ])

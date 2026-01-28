@@ -21,7 +21,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
-from sensor_msgs.msg import JointState, Image
+from sensor_msgs.msg import JointState, Image, CompressedImage
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool, String
 from rcl_interfaces.msg import Log
@@ -94,7 +94,9 @@ class CameraData:
     def __init__(self, name: str, topic: str):
         self.name = name
         self.topic = topic
+        self.is_compressed = topic.endswith('/compressed')
         self.last_frame_b64: Optional[str] = None
+        self.last_jpeg_bytes: Optional[bytes] = None
         self.width: int = 0
         self.height: int = 0
         self.last_frame_time: float = 0.0
@@ -155,7 +157,7 @@ EXPECTED_NODES_BY_PROFILE: Dict[str, List[Dict[str, str]]] = {
         {'name': 'so101_webui_right', 'ns': '/'},
         {'name': 'vlabor_dashboard', 'ns': '/'},
         {'name': 'overhead_camera', 'ns': '/'},
-        {'name': 'episode_recorder', 'ns': '/'},
+        {'name': 'lerobot_recorder', 'ns': '/'},
     ],
     'so101_dual_teleop': [
         {'name': 'joint_state_mirror_dual', 'ns': '/'},
@@ -170,7 +172,7 @@ EXPECTED_NODES_BY_PROFILE: Dict[str, List[Dict[str, str]]] = {
         {'name': 'so101_webui_right', 'ns': '/'},
         {'name': 'vlabor_dashboard', 'ns': '/'},
         {'name': 'overhead_camera', 'ns': '/'},
-        {'name': 'episode_recorder', 'ns': '/'},
+        {'name': 'lerobot_recorder', 'ns': '/'},
     ],
     'so101_single_teleop': [
         {'name': 'joint_state_mirror_single', 'ns': '/'},
@@ -181,7 +183,7 @@ EXPECTED_NODES_BY_PROFILE: Dict[str, List[Dict[str, str]]] = {
         {'name': 'so101_webui_left', 'ns': '/'},
         {'name': 'vlabor_dashboard', 'ns': '/'},
         {'name': 'overhead_camera', 'ns': '/'},
-        {'name': 'episode_recorder', 'ns': '/'},
+        {'name': 'lerobot_recorder', 'ns': '/'},
     ],
     'vr_server_only': [
         {'name': 'ros_tcp_endpoint', 'ns': '/'},
@@ -212,7 +214,7 @@ class VlaborDashboardNode(Node):
         self.declare_parameter('recorder_api_url', 'http://localhost:8082/api')
         self.declare_parameter('webui_ports', [0])
         self.declare_parameter('image_quality', 50)
-        self.declare_parameter('image_max_fps', 5)
+        self.declare_parameter('image_max_fps', 15)
 
         # パラメータ取得
         self.web_port = self.get_parameter('web_port').value
@@ -321,20 +323,32 @@ class VlaborDashboardNode(Node):
         setattr(self, f'_ik_enable_pub_{ns}', ik_pub)
 
     def _subscribe_camera(self, name: str, topic: str):
-        """カメラトピックを購読"""
-        if not HAS_CV2:
-            self.get_logger().warning(
-                f'cv2 not available; camera streaming disabled for {name}')
-            return
-
+        """カメラトピックを購読（compressed / raw 自動判定）"""
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,
             depth=1)
-        self.create_subscription(
-            Image, topic,
-            lambda msg, cam=name: self._on_camera_image(cam, msg),
-            qos)
+
+        if topic.endswith('/compressed'):
+            # CompressedImage: JPEG をそのまま転送（高速パス）
+            self.create_subscription(
+                CompressedImage, topic,
+                lambda msg, cam=name: self._on_compressed_image(cam, msg),
+                qos)
+            self.get_logger().info(
+                f'Camera {name}: compressed subscription on {topic}')
+        else:
+            # raw Image: cv2 で JPEG エンコード（フォールバック）
+            if not HAS_CV2:
+                self.get_logger().warning(
+                    f'cv2 not available; camera streaming disabled for {name}')
+                return
+            self.create_subscription(
+                Image, topic,
+                lambda msg, cam=name: self._on_camera_image(cam, msg),
+                qos)
+            self.get_logger().info(
+                f'Camera {name}: raw subscription on {topic}')
 
     # ------------------------------------------------------------------
     # Arm Callbacks
@@ -443,7 +457,23 @@ class VlaborDashboardNode(Node):
     # Camera Callback
     # ------------------------------------------------------------------
 
+    def _on_compressed_image(self, name: str, msg: CompressedImage):
+        """compressed トピック: JPEG をそのまま転送（高速パス）"""
+        cam = self.cameras.get(name)
+        if cam is None:
+            return
+
+        now = time.time()
+        if now - cam.last_frame_time < self.min_frame_interval:
+            return
+
+        cam.last_jpeg_bytes = bytes(msg.data)
+        cam.last_frame_time = now
+        cam.frame_count += 1
+        self._broadcast_camera_frame_binary(name)
+
     def _on_camera_image(self, name: str, msg: Image):
+        """raw トピック: cv2 で JPEG エンコード（フォールバック）"""
         cam = self.cameras.get(name)
         if cam is None:
             return
@@ -453,7 +483,6 @@ class VlaborDashboardNode(Node):
             return
 
         try:
-            # ROS Image → numpy → JPEG → base64
             if msg.encoding in ('rgb8', 'bgr8'):
                 dtype = np.uint8
                 channels = 3
@@ -476,21 +505,19 @@ class VlaborDashboardNode(Node):
             elif msg.encoding == 'mono8':
                 img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
             elif msg.encoding == '16UC1':
-                # depth: normalize to 8bit for visualization
                 img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
                 img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
 
             _, buf = cv2.imencode('.jpg', img,
                                   [cv2.IMWRITE_JPEG_QUALITY, self.image_quality])
-            b64 = base64.b64encode(buf).decode('ascii')
 
-            cam.last_frame_b64 = b64
+            cam.last_jpeg_bytes = bytes(buf)
             cam.width = msg.width
             cam.height = msg.height
             cam.last_frame_time = now
             cam.frame_count += 1
 
-            self._broadcast_camera_frame(name)
+            self._broadcast_camera_frame_binary(name)
 
         except Exception as e:
             self.get_logger().warning(f'Camera {name} frame error: {e}')
@@ -607,23 +634,41 @@ class VlaborDashboardNode(Node):
         except Exception as e:
             self.get_logger().warning(f'Broadcast arm failed: {e}')
 
-    def _broadcast_camera_frame(self, name: str):
+    def _broadcast_camera_frame_binary(self, name: str):
+        """カメラフレームをバイナリ WebSocket で送信"""
         if self.loop is None or not self.ws_clients:
             return
         cam = self.cameras.get(name)
-        if cam is None or cam.last_frame_b64 is None:
+        if cam is None or cam.last_jpeg_bytes is None:
             return
         try:
-            payload = json.dumps({
-                'type': 'camera_frame',
-                'camera': name,
-                'data': cam.last_frame_b64,
-                'width': cam.width,
-                'height': cam.height,
-            })
-            asyncio.run_coroutine_threadsafe(self._broadcast_ws(payload), self.loop)
+            # バイナリプロトコル: [0x01] + [name_len: 1byte] + [name] + [jpeg]
+            name_bytes = name.encode('utf-8')
+            header = bytes([0x01, len(name_bytes)]) + name_bytes
+            payload = header + cam.last_jpeg_bytes
+            asyncio.run_coroutine_threadsafe(
+                self._broadcast_ws_binary(payload), self.loop)
         except Exception as e:
             self.get_logger().warning(f'Broadcast camera failed: {e}')
+
+    async def _broadcast_ws_binary(self, data: bytes):
+        """バイナリデータを全 WebSocket クライアントに送信"""
+        with self.ws_lock:
+            clients = list(self.ws_clients)
+        if not clients:
+            return
+        dead = []
+        for ws_client in clients:
+            try:
+                await asyncio.wait_for(
+                    ws_client.send_bytes(data), timeout=1.0)
+            except Exception:
+                dead.append(ws_client)
+        if dead:
+            with self.ws_lock:
+                for ws_client in dead:
+                    if ws_client in self.ws_clients:
+                        self.ws_clients.remove(ws_client)
 
     async def _broadcast_ws(self, message: str):
         with self.ws_lock:

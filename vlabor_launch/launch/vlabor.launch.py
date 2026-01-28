@@ -16,6 +16,7 @@ def generate_launch_description():
     default_rviz = os.path.join(so101_share, 'rviz', 'display.rviz')
     default_rviz_vr = os.path.join(so101_share, 'rviz', 'vr_teleop.rviz')
     default_overhead_cfg = os.path.join(vlabor_share, 'config', 'overhead_camera_c920.yaml')
+    default_d405_cfg = os.path.join(vlabor_share, 'config', 'realsense_d405_vlabor.yaml')
     default_mirror_single = os.path.join(vlabor_share, 'config', 'copy_map_single.yaml')
     default_mirror_dual = os.path.join(vlabor_share, 'config', 'copy_map_dual.yaml')
 
@@ -49,6 +50,9 @@ def generate_launch_description():
             'rviz_vr_config': LaunchConfiguration('rviz_vr_config'),
             'gazebo_args': LaunchConfiguration('gazebo_args'),
             'overhead_camera_config': LaunchConfiguration('overhead_camera_config'),
+            'd405_enabled': LaunchConfiguration('d405_enabled'),
+            'd405_config': LaunchConfiguration('d405_config'),
+            'd405_node_name': LaunchConfiguration('d405_node_name'),
             'mirror_single_config': LaunchConfiguration('mirror_single_config'),
             'mirror_dual_config': LaunchConfiguration('mirror_dual_config'),
             'dashboard_port': LaunchConfiguration('dashboard_port'),
@@ -89,6 +93,9 @@ def generate_launch_description():
         DeclareLaunchArgument('rviz_vr_config', default_value=''),
         DeclareLaunchArgument('gazebo_args', default_value=''),
         DeclareLaunchArgument('overhead_camera_config', default_value=''),
+        DeclareLaunchArgument('d405_enabled', default_value=''),
+        DeclareLaunchArgument('d405_config', default_value=''),
+        DeclareLaunchArgument('d405_node_name', default_value=''),
         DeclareLaunchArgument('mirror_single_config', default_value=''),
         DeclareLaunchArgument('mirror_dual_config', default_value=''),
         DeclareLaunchArgument('dashboard_port', default_value=''),

@@ -30,7 +30,7 @@ flowchart TB
         end
 
         subgraph Option["オプション"]
-            Recorder["episode_recorder_node"]
+            Recorder["lerobot_recorder_node"]
             Runner["policy_runner_node"]
         end
     end
@@ -421,7 +421,7 @@ Quest3 (Unity) → TCP → ros_tcp_endpoint → vr_control → ik_solver → arm
 
 ### 記録時
 ```
-ロボット状態 + カメラ映像 → episode_recorder → Dataset
+ロボット状態 + カメラ映像 → lerobot_recorder → Dataset
 ```
 
 ### 自律時
@@ -559,7 +559,7 @@ flowchart LR
 ```
 
 カメラ映像は:
-- **episode_recorder** が記録に使用
+- **lerobot_recorder** が記録に使用
 - **policy_runner** が自律制御に使用
 
 ---

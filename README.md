@@ -43,7 +43,7 @@ ros_tcp_endpoint / unity_tcp_endpoint (TCP受信サーバー)
 
 vr_dual_arm_control_node
   VR座標 -> ロボット座標変換
-  アーム配置(左右40cmなど)に合わせたオフセット・スケール補正
+  アーム配置(左右30cm間隔など、設計は `docs/vr_teleop_design.md` 参照)に合わせたオフセット・スケール補正
 
     ↓
 ik_solver_node (左右)
@@ -59,10 +59,11 @@ piper_ctrl_single_node (left/right, 参考)
     (LeRobot連携・学習データ作成は次フェーズ)
 
 ## 主要ドキュメント
+- **設計・運用**: [docs/README.md](docs/README.md) に目次あり。
 - VRテレオペ設計: `docs/vr_teleop_design.md`
 - VRテレオペ TODO: `docs/vr_teleop_todo.md`
 - SO101ドライバ調査: `docs/so101_driver_survey.md`
-- Piper I/F仕様: `docs/piper_interface_spec.md`
+- Piper I/F仕様: `docs/AgileX_Piper_ROS2インタフェース仕様.md`
 - SO101 I/F仕様: `docs/so101_interface_spec.md`
 - SO101 vs Piper 比較: `docs/robot_interface_comparison.md`
 - 役割・命名ルール: `docs/roles.md`

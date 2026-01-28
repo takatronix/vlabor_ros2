@@ -1,0 +1,60 @@
+# VLAbor 用 RealSense D405 設定（カメラプレビュー用）
+# fv_realsense ノードの設定パラメータ
+fv_realsense:
+  ros__parameters:
+    # カメラ選択
+    camera_selection:
+      selection_method: "auto"
+      serial_number: ""
+      device_name: ""
+      device_index: 0
+
+    # 電源管理
+    power_management:
+      startup_delay: 0.5
+
+    # カメラ設定 — プレビュー用低解像度
+    camera:
+      color_width: 640
+      color_height: 480
+      color_fps: 15
+      depth_width: 640
+      depth_height: 480
+      depth_fps: 15
+
+    # ストリーム — カラーのみ（プレビュー用途）
+    streams:
+      color_enabled: true
+      depth_enabled: false
+      infrared_enabled: false
+      pointcloud_enabled: false
+      depth_colormap_enabled: false
+      sync_enabled: true
+
+    # 圧縮トピック有効化
+    camera_info:
+      enable_camera_info: false
+      enable_compressed_topics: true
+      compressed_quality: 85
+      enable_depth_compressed: false
+
+    # サービス
+    services:
+      get_distance_enabled: false
+      get_camera_info_enabled: false
+
+    # TF
+    tf:
+      enabled: false
+      base_frame: "base_link"
+      camera_frame: "camera_link"
+      color_optical_frame: "color_optical_frame"
+      depth_optical_frame: "depth_optical_frame"
+
+    # トピック
+    topics:
+      color: "color/image_raw"
+      depth: "depth/image_rect_raw"
+      color_compressed: "color/image_raw/compressed"
+      depth_colormap: "depth/colormap"
+      pointcloud: "depth/color/points"

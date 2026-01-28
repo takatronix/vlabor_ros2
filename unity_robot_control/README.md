@@ -20,7 +20,9 @@ ros2 launch unity_robot_control teleop_profiles.launch.py \
   profile:=vr_dual_arm_teleop
 ```
 
-短い起動は `vlabor_launch` パッケージを使用します。
+**vlabor から起動する場合**（推奨）: vlabor_ros2 ルートで `./scripts/run so101_vr_dual_teleop`、または `ros2 launch vlabor_launch vlabor.launch.py profile:=so101_vr_dual_teleop`。プロファイル名は `so101_vr_dual_teleop` など（`vlabor_launch` の設定を参照）。
+
+**本パッケージ単体で起動する場合**は `config/launch_profiles.yaml` のプロファイル名を使用する:
 
 主なプロファイル:
 - `vr_dual_arm_teleop`: VR双腕テレオペ (WebUI + Foxglove)
