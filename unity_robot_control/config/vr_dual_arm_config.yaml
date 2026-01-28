@@ -67,7 +67,9 @@ vr_dual_arm_control_node:
     # VR: x=右, y=上, z=前
     # ROS: x=前, y=左, z=上
     # axis_map: [ROS_x元, ROS_y元, ROS_z元]
-    enable_axis_remap: true
+    # Unity ROS-TCP-Connector が Unity左手系→ROS右手系に変換済みのため、
+    # 追加の軸リマップは不要（二重変換になる）
+    enable_axis_remap: false
     axis_map: ["-y", "x", "z"]
 
     # 安全制限：アームの到達範囲内に制限
